@@ -1,0 +1,95 @@
+{
+  "project_config": {
+    "description": "Configuration for AWS Solutions Architect Professional Translation Script",
+    "version": "1.0"
+  },
+  
+  "translation_settings": {
+    "source_language": "en",
+    "target_language": "pt",
+    "separator": "\n\n---\n\n",
+    "include_separator_comment": true,
+    "separator_comment": "English version below / Versão em inglês abaixo"
+  },
+  
+  "file_processing": {
+    "skip_directories": [
+      "translation-script",
+      "images",
+      ".git",
+      "node_modules"
+    ],
+    "include_file_extensions": [".md"],
+    "max_file_size_mb": 5,
+    "rate_limit_seconds": 1,
+    "chunk_size_chars": 4500
+  },
+  
+  "translation_rules": {
+    "preserve_patterns": [
+      "```",
+      "http://",
+      "https://",
+      "file://",
+      "arn:",
+      "ami-",
+      "sg-",
+      "vpc-",
+      "subnet-"
+    ],
+    "skip_lines_starting_with": [
+      "![",
+      "[",
+      "    ",
+      "aws:"
+    ],
+    "skip_lines_containing": [
+      "://",
+      "arn:",
+      "vpc-"
+    ]
+  },
+  
+  "logging": {
+    "log_file": "translation_log.json",
+    "verbose_mode": true,
+    "save_progress_interval": 1
+  },
+  
+  "resume_on_error": {
+    "enabled": true,
+    "max_retries": 3,
+    "backoff_seconds": 5
+  },
+  
+  "aws_services_to_preserve": [
+    "IAM",
+    "EC2",
+    "S3",
+    "VPC",
+    "RDS",
+    "Lambda",
+    "DynamoDB",
+    "CloudFormation",
+    "CloudWatch",
+    "CloudTrail",
+    "KMS",
+    "ACM",
+    "ECS",
+    "EKS",
+    "ALB",
+    "NLB",
+    "API Gateway",
+    "SNS",
+    "SQS",
+    "SES",
+    "Route53",
+    "CloudFront",
+    "Direct Connect",
+    "VPN",
+    "Transit Gateway",
+    "VPC Peering",
+    "PrivateLink",
+    "Elastic Load Balancer"
+  ]
+}

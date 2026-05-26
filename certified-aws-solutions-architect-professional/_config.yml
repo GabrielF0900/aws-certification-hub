@@ -1,0 +1,25 @@
+theme: jekyll-theme-leap-day
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - README.md
+title: Notas do Exame AWS Certified Solutions Architect – Professional (SAP-C02)
+description: Notas baseadas no curso de Adrian Cantrill de cantrill.io e no curso do Udemy de Stéphane Maarek.
+nav_order: 4
+
+---
+
+theme: jekyll-theme-leap-day
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - README.md
+title: AWS Certified Solutions Architect – Professional (SAP-C01) Exam Notes
+description: Notes based on Adrian Cantrill's course from cantrill.io and Stéphane Maarek's Udemy course.
+nav_order: 4
