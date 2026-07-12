@@ -1,5 +1,26 @@
 # AWS X-Ray
 
+- É uma aplicação de rastreamento distribuído. Foi projetada para rastrear sessões através de uma aplicação
+- O X-Ray recebe dados de muitos serviços (API Gateway, Lambda, DynamoDB) como parte de uma aplicação e fornece uma visão geral única do fluxo da sessão
+- Conceitos fundamentais do X-Ray:
+    - **Cabeçalho de Rastreamento**: quando um usuário se conecta a uma aplicação com o X-Ray habilitado, um **ID de rastreamento** é gerado e incorporado em um cabeçalho de rastreamento. Este cabeçalho é usado para rastrear a requisição em todos os serviços suportados
+    - **Segmentos**: os serviços suportados enviam dados ao X-Ray usando segmentos. Os segmentos são blocos de dados contendo informações sobre host/ip, requisição, resposta, trabalho realizado (tempos), problemas
+    - **Subsegmentos**: os segmentos podem conter subsegmentos para mais granularidade. Podem conter detalhes de outros serviços como parte do componente da aplicação
+    - **Gráfico de Serviços**: documento JSON detalhando serviços e recursos que compõem a aplicação
+    - **Mapa de Serviços**: representação visual de um gráfico de serviços pelo console X-Ray
+- Para fornecer dados do X-Ray ao serviço AWS X-Ray, podemos fazer o seguinte:
+    - EC2: instalar o Agente X-Ray
+    - ECS: o agente é instalado em qualquer tarefa
+    - Lambda: habilitar o X-Ray
+    - Beanstalk: o agente vem pré-instalado
+    - API Gateway: pode ser habilitado por opção de estágio
+    - SNS e SQS: podem ser habilitados
+- Os serviços requerem permissão IAM para enviar dados ao serviço X-Ray
+
+---
+
+# AWS X-Ray
+
 - It is a distributed tracing application. It designed to track sessions through an application
 - X-Ray takes data from many services (API Gateway, Lambda, DynamoDB) as part of an application and gives on single overview of the session flow
 - Fundamental concepts of X-Ray:

@@ -1,5 +1,198 @@
 # DynamoDB
 
+- Produto NoSQL, de coluna larga, DBaaS (Database as a Service)
+- O DynamoDB pode lidar com dados de chave/valor ou dados de documento
+- Não requer servidores autogerenciados nem infraestrutura para gerenciar
+- Suporta uma variedade de opções de scaling:
+    - Desempenho provisionado manual/automático entrada/saída
+    - Modo Sob Demanda
+- O DynamoDB é altamente resiliente entre AZs e, opcionalmente, globalmente
+- O DynamoDB é muito rápido; fornece recuperação de dados em milissegundos de um dígito
+- Fornece backups automáticos, recuperação pontual e criptografia em repouso
+- Suporta integração orientada a eventos; fornece ações quando os dados são modificados dentro de uma tabela
+
+## Tabelas DynamoDB
+
+- Uma tabela no DynamoDB é um agrupamento de itens com a mesma chave primária
+- A chave primária pode ser uma chave primária simples (Chave de Partição - PK) ou chave primária composta (Chave de Partição + Chave de Classificação - SK)
+- Em uma tabela não há limites para o número de itens
+- No caso de chaves compostas, a combinação de PK e SK deve ser única
+- Os itens podem ter, além da chave primária, outros dados chamados atributos
+- Cada item pode ser diferente, desde que tenha a mesma chave primária
+- Um item pode ter no máximo 400 KB
+- O DynamoDB pode ser configurado com capacidade provisionada e sob demanda (capacidade = velocidade)
+- Para capacidade sob demanda, devemos definir:
+    - Unidades de Capacidade de Escrita (WCU): 1 WCU = 1 KB por segundo
+    - Unidades de Capacidade de Leitura (RCU): 1 RCU = 4 KB por segundo
+
+## Backups do DynamoDB
+
+- Backups sob demanda:
+    - Uma cópia completa da tabela é retida até que o backup seja removido
+    - Os backups sob demanda podem ser usados para restaurar dados e configurações para a mesma região ou entre regiões
+    - Se restaurarmos um backup, podemos reter ou remover índices
+    - Da mesma forma, podemos ajustar as configurações de criptografia
+- Recuperação Pontual:
+    - Não habilitada por padrão; deve ser habilitada
+    - É um registro contínuo de alterações
+    - Permite repetição em qualquer ponto na janela (janela de recuperação de 35 dias)
+    - Desta janela de 35 dias, podemos restaurar para outra tabela com granularidade de 1 segundo
+
+## Considerações sobre o DynamoDB
+
+- É um banco de dados NoSQL; NÃO é relacional; não é adequado para dados relacionais
+- É um banco de dados de Chave/Valor
+- O acesso às tabelas do DynamoDB é via console, CLI ou API (SDK)
+- A linguagem de consulta SQL verdadeira não é suportada; o DynamoDB oferece suporte para PartiQL (linguagem semelhante a SQL)
+- Faturamento: baseado em RCU/WCU, armazenamento e recursos adicionais habilitados. A alocação reservada pode ser comprada para compromissos mais longos
+
+## Operação, Consistência e Desempenho do DynamoDB
+
+- Podemos escolher entre dois modos de capacidade diferentes na criação da tabela: sob demanda e provisionado
+- Podemos ser capazes de alternar entre esses modos de capacidade posteriormente
+- Modo de capacidade sob demanda:
+    - Projetado para carga desconhecida e imprevisível
+    - Requer baixa administração
+    - Não precisamos definir explicitamente as configurações de capacidade; tudo é gerenciado pelo DynamoDB
+    - Pagamos um preço por milhão de unidades de leitura ou escrita
+- Modo de capacidade provisionada:
+    - Definimos o RCU/WCU por tabela
+- Cada operação consome pelo menos 1 RCU/WCU
+- 1 RCU é `1 * 4 KB` de operação de leitura por segundo para leituras fortemente consistentes; `2 * 4 KB` de operações de leitura por segundo para leituras eventualmente consistentes
+- 1 WCU é `1 * 1 KB` de operação de escrita por segundo
+- Cada tabela tem um pool de burst de RCU e WCU (300 segundos)
+- Operações do DynamoDB:
+    - **Consulta (Query)**:
+        - Quando uma consulta é realizada, precisamos fornecer uma chave de partição. Opcionalmente, podemos fornecer uma chave de classificação ou um intervalo
+        - A consulta pode retornar 0 ou mais itens, mas precisamos especificar a chave de partição sempre
+        - Podemos especificar atributos específicos que gostaríamos que fossem retornados; seremos cobrados por consultar o item inteiro de qualquer forma
+    - **Varredura (Scan)**:
+        - Operação menos eficiente, mas a mais flexível
+        - A varredura percorre uma tabela consumindo a capacidade de cada item
+        - Qualquer atributo pode ser usado e qualquer filtro pode ser aplicado, mas a varredura consumirá a capacidade de cada item varrido
+
+## Modelo de Consistência do DynamoDB
+
+- O DynamoDB pode operar usando dois modos de consistência diferentes:
+    - Eventualmente consistente
+    - Fortemente (imediatamente) consistente
+- O DynamoDB replica dados entre AZs usando nós de armazenamento. Os nós de armazenamento têm um nó líder, que é eleito a partir dos nós existentes
+- O DynamoDB tem um conjunto de entidades que redirecionam conexões para os nós de armazenamento apropriados. As gravações são sempre direcionadas ao nó líder
+- O nó líder replica dados para outros nós, geralmente concluindo em alguns milissegundos
+- Existem 2 tipos de leituras possíveis no DynamoDB:
+    - Leituras eventualmente consistentes:
+        - Pode acontecer que tentemos ler dados que estão desatualizados (stale) / totalmente ausentes
+        - Podemos ler o dobro de dados com o mesmo número de RCUs
+    - Leituras fortemente consistentes:
+        - Essas operações de leitura sempre usam o nó líder
+        - Nem todo aplicativo pode tolerar leituras eventualmente consistentes
+        - Leituras fortemente consistentes custam duas vezes mais do que as eventualmente consistentes
+
+## Cálculo de WCU/RCU
+
+- Exemplo: precisamos armazenar 10 itens por segundo, tamanho médio de 2,5 KB por item
+    - WCU necessário:
+        ```
+        ARREDONDAR PARA CIMA(TAMANHO DO ITEM / 1 KB) => 3
+        MULT pela média (30) => WCU necessário = 30
+        ```
+- Exemplo: precisamos recuperar 10 itens por segundo, tamanho médio de 2,5 KB por item
+    - RCU necessário:
+        ```
+        ARREDONDAR PARA CIMA (TAMANHO DO ITEM / 4 KB) => 1
+        MULT pela média de operações de leitura por segundo (10) => Leituras fortemente consistentes = 10, Leituras eventualmente consistentes => 5
+        ```
+
+## Índices do DynamoDB
+
+- São formas de melhorar a eficiência da recuperação de dados do DynamoDB
+- Os índices são visões alternativas dos dados da tabela, permitindo que a operação de consulta funcione de formas que não seria possível de outra forma
+- Índices Secundários Locais permitem criar uma visão usando uma chave de classificação diferente; Índices Secundários Globais permitem criar uma chave de partição e classificação diferentes
+
+### Índices Secundários Locais (LSI)
+
+- **Devem ser criados com a tabela base!**
+- Podemos ter no máximo 5 LSIs por tabela base
+- Os LSIs permitem uma chave de classificação alternativa, mas com a mesma chave de partição
+- Compartilham o mesmo RCU e WCU com a tabela principal
+- Atributos que podem ser projetados nos LSIs: `ALL`, `KEYS_ONLY`, `INCLUDE` (podemos escolher especificamente quais atributos incluir)
+- Os Índices Secundários Locais são esparsos: apenas itens que têm um valor na chave de classificação alternativa do índice são adicionados ao índice
+
+### Índices Secundários Globais (GSI)
+
+- Podem ser criados a qualquer momento
+- É um limite padrão de 20 GSIs por tabela base
+- Podemos definir diferentes chaves de partição e classificação
+- Os GSIs têm suas próprias alocações de RCU e WCU caso estejamos usando capacidade provisionada
+- Atributos que podem ser projetados em um índice: `ALL`, `KEYS_ONLY`, `INCLUDE`
+- Os GSIs também são esparsos; apenas itens que têm valores na nova PK e SK opcional são adicionados ao índice
+- Os GSIs são sempre eventualmente consistentes; os dados são replicados da tabela principal
+
+### Considerações sobre LSI e GSI
+
+- Devemos ter cuidado com as projeções; mais capacidade é consumida se projetarmos atributos desnecessários
+- Se não projetarmos um atributo específico e o exigirmos ao consultar o índice, ele buscará os dados da tabela principal, tornando a consulta ineficiente
+- A AWS recomenda usar GSIs como padrão; LSI somente quando a consistência forte é necessária
+
+## Streams e Gatilhos do DynamoDB
+
+- Um stream do DynamoDB é uma lista ordenada por tempo de alterações de itens em uma tabela DynamoDB
+- Um stream do DynamoDB é uma janela deslizante de 24 horas dessas alterações. Nos bastidores, usa o Kinesis Streams
+- Os streams devem ser habilitados por tabela
+- Os streams registram inserções, atualizações e exclusões
+- Podemos criar diferentes tipos de visão que influenciam o que está no stream
+- Tipos de visão disponíveis:
+    - `KEYS_ONLY`: o stream registrará apenas a chave de partição e as chaves de classificação disponíveis para itens que foram alterados
+    - `NEW_IMAGE`: armazena o item inteiro com o novo estado após a alteração
+    - `OLD_IMAGE`: armazena o estado inteiro do item antes da alteração
+    - `NEW_AND_OLD_IMAGE`: armazena os estados antes/depois dos itens em caso de alteração
+- Em alguns casos, os novos/antigos estados registrados podem estar vazios; exemplo: no caso de uma exclusão, o novo estado de um item fica em branco
+- Os streams são a base dos gatilhos de banco de dados
+- Uma alteração de item dentro de uma tabela gera um evento, que contém os dados que foram alterados
+- Uma ação é tomada usando esses dados no caso de evento
+- Podemos usar streams e Lambda no caso de alterações e eventos
+- Streams e gatilhos são úteis para agregação de dados, mensagens, notificações, etc.
+
+## DynamoDB Accelerator (DAX)
+
+- É um cache em memória diretamente integrado ao DynamoDB
+- O DAX opera dentro de uma VPC; projetado para ser implantado em múltiplas AZs em uma VPC
+- O DAX é um serviço de cluster; os nós são colocados em diferentes AZs. Há nós primários a partir dos quais os dados são replicados para nós de réplica
+- O DAX mantém 2 caches diferentes:
+    - Cache de itens: mantém os resultados das chamadas (`Batch`)`GetItem`
+    - Cache de consulta: mantém a coleção de itens com base nos parâmetros de consulta/varredura
+- O DAX é acessado por meio de um endpoint. Este endpoint balanceia a carga entre os nós
+- Os nós são altamente disponíveis (HA); se o nó primário falhar, outro nó é eleito
+- O DAX pode escalar verticalmente (UP) ou horizontalmente (OUT)
+- Ao gravar dados no DynamoDB, o DAX usa cache de gravação direta (write-through); os dados são gravados ao mesmo tempo no cache e no banco de dados
+- O DAX é implantado em uma VPC! Qualquer aplicação que queira usar o DAX também deve estar em uma VPC
+- Cache hits são retornados em microssegundos; cache misses em milissegundos
+- O DAX não é adequado para aplicações que exigem leituras fortemente consistentes
+
+## Tabelas Globais do DynamoDB
+
+- As tabelas globais fornecem replicação multi-master entre regiões
+- Para implementar tabelas globais, precisamos criar tabelas em múltiplas regiões e adicioná-las à mesma tabela global (tornando-se tabelas de réplica)
+- O DynamoDB utiliza **last writer wins** (último escritor vence) na resolução de conflitos
+- Podemos ler e gravar em qualquer região; as atualizações geralmente são replicadas em menos de um segundo
+- Leituras fortemente consistentes são suportadas apenas na mesma região que as gravações
+- As tabelas globais fornecem HA global e DR/BC global
+
+## TTL do DynamoDB
+
+- TTL = Time-to-Live (Tempo de Vida)
+- Para usar o TTL, precisamos habilitá-lo em uma tabela e selecionar um atributo específico para o TTL
+- O atributo deve conter um número representando uma época (número de segundos)
+- Um processo por partição verifica periodicamente o tempo atual em relação ao valor no atributo TTL
+- Itens onde o atributo TTL é mais antigo que o tempo atual são definidos como expirados
+- Outro processo em segundo plano por partição verifica itens expirados e os remove das tabelas e índices, adicionando um evento de exclusão aos streams, se habilitados
+- Esses processos são executados em segundo plano sem afetar o desempenho da tabela e sem nenhuma cobrança adicional
+- Podemos configurar um stream dedicado vinculado aos processos TTL, com uma janela deslizante de 24 horas para quaisquer exclusões causadas pelos processos TTL. Útil se quisermos ter qualquer manutenção onde rastreamos os eventos TTL que ocorrem nas tabelas (por exemplo, podemos implementar um processo de desfazer exclusão)
+
+---
+
+# DynamoDB
+
 - NoSQL, wide column, DB-as-service product
 - DynamoDB can handle key/value data or document data
 - It requires no self-managed servers of infrastructure to be managed

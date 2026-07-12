@@ -1,5 +1,221 @@
 # EC2
 
+## Opções de Compra do EC2 (Tipos de Lançamento)
+
+- **Sob Demanda (padrão)**:
+    - Média de tudo, sem contras ou prós específicos
+    - As instâncias sob demanda são isoladas, mas múltiplas instâncias de clientes são executadas em hardware compartilhado
+    - Múltiplos tipos de instância (tamanhos diferentes) podem ser executados nos mesmos hosts EC2, consumindo uma alocação diferente de recursos
+    - Faturamento: faturamento por segundo enquanto uma instância está em execução; se um sistema for desligado, não somos cobrados por isso
+    - Recursos associados como armazenamento consomem capacidade; seremos cobrados independentemente de a instância estar em execução ou parada
+    - Devemos sempre começar o processo de avaliação usando sob demanda
+    - Com o sob demanda não há interrupções. Iniciamos uma instância e ela deve ser executada enquanto não decidirmos desligá-la
+    - Em caso de escassez de recursos, as instâncias reservadas recebem prioridade mais alta; considere-as em vez do sob demanda em caso de sistemas críticos para os negócios
+    - O sob demanda oferece preços previsíveis sem opções de desconto
+    - Se você não tiver certeza sobre a duração ou o tipo de carga de trabalho, o sob demanda deve ser considerado
+- **Instâncias Spot**:
+    - Forma mais barata de obter capacidade de computação EC2
+    - Os preços spot vendem capacidade EC2 a preços mais baixos para utilizar a capacidade EC2 sobressalente nas máquinas host
+    - Se o preço spot subir acima do preço máximo selecionado, nossas instâncias são encerradas
+    - Nunca devemos usar as instâncias spot para cargas de trabalho que não podem tolerar interrupções
+    - Qualquer coisa que possa tolerar interrupções e possa ser re-iniciada é adequada para spot
+- **Instâncias Reservadas Padrão**:
+    - O sob demanda geralmente é usado para uso desconhecido ou de curto prazo; o reservado é para uso consistente de longo prazo do EC2
+    - Reservas:
+        - São compromissos de que usaremos uma instância/conjunto de instâncias por um período mais longo de tempo
+        - O efeito de uma reserva é reduzir o custo por segundo ou removê-lo completamente
+        - A reserva precisa ser planejada com antecedência
+        - Pagamos por reservas não utilizadas
+        - As reservas podem ser compradas para um tipo específico de instâncias. Podem ser bloqueadas por região e AZ
+        - Instâncias bloqueadas por AZ reservam capacidade EC2
+        - Se uma instância for reservada para uma região, ela não reserva capacidade, mas pode beneficiar qualquer instância lançada em qualquer AZ nessa região
+        - As reservas podem ter efeitos parciais no sentido de que podemos obter descontos para instâncias maiores em comparação às quais a reserva foi comprada
+        - Podemos nos comprometer com reservas de 1 ano ou 3 anos
+        - Estruturas de pagamento:
+            - Sem adiantamento: pagamos por segundo uma taxa menor em comparação ao sob demanda. Pagamos mesmo se a instância não for usada
+            - Total adiantado: o custo total dos 1 ou 3 anos. Nenhum pagamento por segundo será necessário. Oferece o maior desconto
+            - Adiantamento parcial: pagamos uma taxa reduzida adiantada para uso por segundo menor
+    - As instâncias reservadas são boas para componentes com uso conhecido que exigem acesso consistente à computação a longo prazo
+- **Instâncias Reservadas Programadas**:
+    - Ótimas para requisitos de longo prazo que não são executados constantemente, por exemplo: processamento em lote executando 5 horas/dia
+    - Para instâncias reservadas programadas, especificamos uma janela de tempo. A capacidade pode ser usada apenas durante a janela de tempo
+    - Limitações:
+        - Não suporta todos os tipos de instância
+        - A compra mínima por ano é de 1200 horas; o compromisso mínimo é de 1 ano
+- **Hosts Dedicados**:
+    - São hosts EC2 alocados inteiramente a um cliente
+    - São hosts projetados para instâncias específicas, por exemplo: A, C, R, etc.
+    - Os hosts vêm com todos os recursos esperados de uma máquina física: número de núcleos e CPUs, memória, armazenamento local e conectividade
+    - Pagamos pelo host; não pagamos mais pelo uso de instâncias por segundo caso lançamos instâncias no host
+    - Temos capacidade para um hosts dedicado; podemos lançar diferentes tamanhos de instâncias com base na capacidade disponível
+    - Razões para hosts dedicados: queremos usar software licenciado pelo número de núcleos ou número de sockets
+    - Afinidade de host: recurso dos hosts dedicados. Vincula instâncias a hosts; se pararmos e iniciarmos a instância, ela permanecerá no mesmo host
+    - Apenas nossas instâncias serão executadas em hosts dedicados
+    - Gerenciamento de capacidade:
+        - Temos que gerenciar nossa capacidade em termos de subutilização do host
+        - Temos uma capacidade limitada em termos de quantas instâncias EC2 podemos lançar
+- **Instâncias Dedicadas**:
+    - Nossas instâncias são executadas em um host EC2 com outras instâncias nossas. O host não é compartilhado com outros clientes AWS; nenhum outro cliente usará o mesmo hardware
+    - Não pagamos pelo host, nem compartilhamos o host
+    - Há algumas taxas extras para este tipo de opção de compra:
+        - Uma taxa única por hora para qualquer região em que estamos usando instâncias dedicadas
+        - Há uma taxa pelas próprias instâncias dedicadas
+    - As instâncias dedicadas são comuns em setores onde não podemos compartilhar hardware
+    - Não é necessário gerenciamento extra de capacidade por nossa parte
+
+## Reservas de Capacidade
+
+- A AWS prioriza qualquer compromisso programado para fornecer capacidade EC2
+- Após instâncias programadas, o sob demanda é priorizado
+- A capacidade restante pode ser usada para instâncias spot
+- A reserva de capacidade é diferente das instâncias reservadas
+- Reserva regional:
+    - Fornece um desconto de faturamento para instâncias válidas lançadas em qualquer AZ nessa região
+    - Embora seja flexível, a reserva regional não reserva capacidade dentro de uma AZ - arriscado se a capacidade for limitada durante uma falha grave
+- Reserva zonal:
+    - Mesmo desconto de faturamento que para a reserva regional, mas a reserva se aplica apenas a AZs específicas
+- O compromisso de reserva regional/zonal é de 1 ou 3 anos
+- Reserva de capacidade sob demanda: pode ser reservada para garantir que sempre tenhamos acesso à capacidade em uma AZ quando precisarmos, mas ao preço total sob demanda. Sem limites de prazo, mas pagamos independentemente de consumirmos a reserva ou não
+- As reservas de capacidade não fornecem nenhum benefício de faturamento; apenas reservamos a capacidade para computação EC2
+
+## Plano de Economia do EC2
+
+- Um compromisso por hora de 1 ou 3 anos
+- O Plano de Economia pode ser de 2 tipos diferentes:
+    - Valores em dólares de computação geral: podemos economizar até 66% em comparação ao sob demanda
+    - Plano de Economia EC2: até 72% de economia para EC2
+    - Plano de economia SageMaker: reduz custos em até 64% para uso do SageMaker. Aplica-se a instâncias de ML do SageMaker (ml.t3, ml.m5, ml.m5d)
+- O plano de economia de computação geral atualmente se aplica ao EC2, Fargate e Lambda
+- O uso de recursos consome o compromisso do plano de economia à taxa reduzida dos planos de economia; além do compromisso, o faturamento sob demanda é usado
+
+## Rede EC2
+
+- As instâncias são criadas com uma ENI primária; isso não pode ser removido ou desanexado da instância
+- ENIs secundárias podem ser adicionadas a uma instância que pode estar em sub-redes diferentes (NÃO AZs diferentes!)
+- As ENIs secundárias podem ser desanexadas e anexadas a outras instâncias
+- Os Grupos de Segurança estão associados a uma ENI, não a instâncias EC2
+- Cada instância recebe um endereço IPv4 privado primário do intervalo de sub-rede. Este endereço IP permanece durante a vida útil da instância EC2
+- O endereço IP primário é exposto ao sistema operacional
+- As ENIs também podem ter um ou mais endereços IP secundários dependendo do tipo de instância
+- O endereço IP público é alocado para a instância se a lançarmos em uma sub-rede onde isso está habilitado ou habilitamos explicitamente um endereço primário para a instância. Esses endereços IP públicos são dinâmicos e podem mudar se a instância EC2 for movida para outro host EC2
+- Os IPs públicos não são visíveis para o sistema operacional
+- Para obter endereços IP públicos estáticos, podemos associar um IP Elástico à instância
+- Podemos alocar um IP público por IP privado
+- Somos cobrados se os IPs Elásticos não estiverem associados a instâncias
+- As ENIs podem ter 1 ou mais endereços IPv6, 1 endereço MAC e 1 ou mais Grupos de Segurança
+- O endereçamento IPv6, se habilitado, todos os endereços IPv6 são roteáveis publicamente
+- Os endereços IPv6 são sempre visíveis para o sistema operacional
+- Verificações de origem/destino: cada ENI tem um sinalizador que pode ser desabilitado
+- Por padrão, a verificação de origem/destino está habilitada; se desabilitada, a ENI pode processar tráfego que não foi criado pelas instâncias EC2 ou tráfego para o qual a instância EC2 não é o destino
+
+## Bootstrapping e Baking de AMI
+
+- Bootstrapping:
+    - É uma forma de construir instâncias EC2 de forma flexível. Não é rápido, mas super flexível
+    - Construção automatizada e flexível de instâncias EC2
+    - Provisionamos instâncias EC2 e adicionamos um script aos dados do usuário
+    - O CloudInit executa o script na instância quando a instância é lançada
+    - Este processo pode levar mais tempo, embora seja muito flexível
+    - Quando concluído, a instância ec2 está pronta para uso
+- Baking de AMI:
+    - Antecipamos o tempo e esforço necessários para configurar uma instância
+    - Nosso objetivo é deixar a instância pronta ou quase pronta neste ponto do processo. Podemos usar bootstrapping para instalar o software e deixar a instância pronta
+    - Lançamos uma instância EC2 e realizamos as tarefas necessárias a partir das quais podemos criar uma AMI
+    - Podemos usar a AMI para implantar muitas instâncias rapidamente
+    - A desvantagem é que é mais difícil mudar a AMI
+    - O baking de AMI e o bootstrapping não são mutuamente exclusivos
+    - Se houver alguma questão de exame relacionada ao tempo necessário para lançar a instância EC2, pense em baking de AMI
+
+## Grupos de Posicionamento EC2
+
+- Nos permitem influenciar os posicionamentos de instâncias EC2, garantindo que as instâncias estejam próximas ou não
+- Existem 3 tipos de grupos de posicionamento na AWS:
+    - **Cluster**: quaisquer instâncias em um único grupo de posicionamento estão fisicamente próximas
+    - **Spread**: as instâncias estão usando hardware subjacente diferente
+    - **Partition**: grupos de instâncias EC2 que estão separadas em hardware de host diferente
+
+### Grupos de Posicionamento Cluster
+
+- Usados para o maior desempenho possível
+- A melhor prática é lançar todas as instâncias ao mesmo tempo que farão parte do grupo de posicionamento. Isso garante que a AWS aloque capacidade no mesmo local
+- Os grupos de posicionamento cluster estão localizados na mesma AZ; quando a primeira instância é lançada, a AZ é bloqueada
+- Idealmente, as instâncias em um grupo de posicionamento cluster estão localizadas no mesmo rack, frequentemente no mesmo host EC2
+- Todas as instâncias têm largura de banda direta rápida entre si (podem atingir taxa de transferência de fluxo único de 10Gbps vs 5Gbps que é normalmente alcançável)
+- Oferecem a menor latência possível e máximo PPS (pacotes por segundo) possível na AWS
+- Para atingir esses níveis de desempenho, precisamos usar instâncias com rede de alto desempenho: instâncias com mais largura de banda e com Rede Aprimorada
+- Os grupos de posicionamento cluster devem ser usados para o maior desempenho. Eles não oferecem HA e têm muito pouca resiliência
+- Considerações para grupos de posicionamento cluster:
+    - Não podemos abranger AZs; a AZ é bloqueada quando a primeira instância está sendo lançada
+    - Podemos abranger peers de VPC, mas isso afetará negativamente o desempenho
+    - Os grupos de posicionamento cluster não são suportados para todos os tipos de instância
+    - *Recomendado*: use o mesmo tipo de instâncias e lance-as ao mesmo tempo
+    - Os grupos de posicionamento cluster oferecem 10 Gbps para desempenho de fluxo único
+    - Casos de uso: alto desempenho, velocidades rápidas, baixa latência
+
+### Grupos de Posicionamento Spread
+
+- Oferecem o máximo de disponibilidade e resiliência possível
+- Podem abranger múltiplas AZs
+- As instâncias no mesmo grupo de posicionamento spread estão localizadas em racks diferentes, com rede e fontes de alimentação isoladas
+- Há um limite de 7 instâncias por AZ no caso de grupos de posicionamento spread. Isso ocorre porque cada instância é um rack de instância completamente separado
+- Considerações:
+    - O posicionamento spread fornece isolamento de infraestrutura
+    - Limite rígido: 7 instâncias por AZ
+    - Não podemos usar instâncias ou hosts dedicados
+    - Casos de uso: Pequeno número de instâncias críticas que precisam ser mantidas separadas umas das outras. Podem ser espelhos de servidor de arquivos ou controladores de domínio diferentes dentro de uma organização
+
+### Grupos de Posicionamento Partition
+
+- Semelhantes aos grupos de posicionamento spread
+- Projetados para situações em que precisamos de mais de 7 instâncias por AZ, mas ainda precisamos de separação
+- Podem ser criados em múltiplas AZs em uma região
+- Na criação, especificamos o número de partições por AZ (máximo 7 por AZ)
+- Cada partição tem seu próprio rack com energia e rede isoladas
+- Podemos lançar quantas instâncias precisarmos em um grupo de partições. Podemos selecionar a partição manualmente ou podemos deixar o EC2 decidir sobre uma partição para uma nova instância
+- Casos de uso para grupos de partições: HDFS, HBase, Cassandra, aplicações conscientes de topologia
+- As instâncias podem ser colocadas em uma partição específica ou podemos deixar a AWS decidir
+- Oferecem visibilidade nas partições e você pode ver qual instância está em qual partição
+
+## Instâncias Spot EC2
+
+- Pode obter um desconto de até 90% em comparação com instâncias Sob Demanda
+- Podemos definir um preço spot máximo e obter a instância se nosso preço for maior que o preço atual
+- Se o preço spot atual ultrapassar nosso preço máximo, podemos optar por parar ou encerrar a instância dentro de um período de carência de 2 minutos
+- Se não quisermos que nossa instância spot seja recuperada pela AWS, podemos usar um **Spot Block**
+    - Podemos bloquear uma instância spot durante um período de tempo especificado (1 a 6 horas) sem interrupções
+    - Em situações raras, a instância pode ser recuperada
+- Casos de uso para instâncias spot: trabalhos em lote ou cargas de trabalho resilientes a falhas
+- Podemos lançar instâncias spot com uma solicitação de spot. Uma solicitação de spot contém as seguintes informações:
+    - Preço máximo
+    - Número desejado de instâncias
+    - Especificação de lançamento
+    - Tipo de solicitação: uma vez, persistente
+    - Válido a partir de, válido até
+- Tipos de solicitação:
+    - Solicitação única: assim que a solicitação for atendida, a solicitação desaparecerá
+    - Solicitação persistente: o número de instâncias é tentado ser mantido mesmo se algumas instâncias forem recuperadas, o que significa que a solicitação não desaparecerá assim que for concluída pela primeira vez
+- Cancelando uma instância spot: para cancelar uma instância spot, ela deve estar em um estado **aberto**, **ativo** ou **desabilitado**
+- Estados de instância spot:
+    ![Estados de instância spot](images/spot_request_states.png)
+- Cancelar uma solicitação de spot não encerrará as próprias instâncias. Para encerrar instâncias, primeiro temos que encerrar a solicitação de spot, se houver uma ativa
+
+## Frotas Spot
+
+- Frota Spot - conjunto de instâncias spot + instâncias sob demanda (opcional)
+- A frota spot tentará atingir a capacidade alvo com restrições de preço
+- Um pool de lançamento pode ter tipos de instância, sistema operacional e AZ diferentes
+- Podemos ter múltiplos pools de lançamento, para que a frota possa escolher o melhor
+- A frota spot parará de lançar instâncias quando a capacidade alvo for atingida
+- Estratégias para alocar instâncias spot:
+    - **lowestPrice**: a frota spot lançará instâncias do pool com o menor preço
+    - **diversified**: distribui instâncias em todos os pools
+    - **capacityOptimized**: lança instâncias com base na capacidade ideal para o número de instâncias
+- As frotas spot nos permitem solicitar automaticamente instâncias spot com o menor preço
+
+---
+
+# EC2
+
 ## EC2 Purchase Options (Launch Types)
 
 - **On-Demand (default)**:

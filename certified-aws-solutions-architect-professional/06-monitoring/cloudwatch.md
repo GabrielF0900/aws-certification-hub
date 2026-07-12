@@ -1,5 +1,93 @@
 # CloudWatch
 
+- Fornece serviços para ingestão, armazenamento e gerenciamento de métricas
+- É um serviço público - fornece endpoints de espaço público
+- Muitos serviços têm integração nativa do plano de gerenciamento com o CloudWatch, por exemplo o EC2. Além disso, o EC2 fornece apenas informações coletadas externamente; para métricas de dentro de um EC2, podemos usar o agente CloudWatch
+- O CloudWatch pode ser usado a partir de ambientes on-premises usando o agente ou a API CloudWatch
+- O CloudWatch armazena dados de forma persistente
+- Os dados podem ser visualizados no console, CLI ou API, mas o CloudWatch também fornece dashboards e detecção de anomalias
+- Alarmes CloudWatch: reagem a métricas, podem ser usados para notificar ou realizar ações
+- Instâncias em sub-redes públicas podem se conectar ao CloudWatch usando o gateway de internet, e instâncias em sub-redes privadas podem se conectar ao CloudWatch usando o Endpoint de Interface
+
+## CloudWatch - Dados
+
+- **Namespace**: contêiner para métricas, por exemplo: AWS/EC2 para o NS do EC2, AWS/Lambda para o NS do Lambda. É possível ter o mesmo nome de métrica para diferentes serviços; o NS ajuda a segregá-los
+- **Ponto de dados**: timestamp, valor, unidade de medida (opcional)
+- **Métrica**: conjunto de pontos de dados ordenados por tempo. Exemplo de métricas integradas: `CPUUtilization`, `NetworkIn`, `DiskWriteBytes` para EC2
+- Cada métrica tem um `MetricName` e um namespace, por exemplo: CPUUtilization para AWS/EC2
+- **Dimensão**: par nome/valor; exemplo: uma dimensão é a forma de separar a métrica `CPUUtilization` de uma instância para outra
+- As dimensões podem ser usadas para agregar dados; exemplo: agregar dados para todas as instâncias de um ASG
+- **Resolução**: padrão (granularidade de 60 segundos) ou alta (granularidade de 1 segundo)
+- **Resolução de métrica**: período mínimo para o qual podemos obter um ponto de dados particular
+- Retenção de dados:
+    - Granularidade abaixo de 60s é retida por 3 horas
+    - Alta resolução pode ser medida, mas custa mais. A resolução determina o período mínimo que pode ser especificado e obter um valor válido. Padrão (60 s) .. Alta (1 s)
+    - Granularidade de 60s retida por 15 dias
+    - 5 min retido por 63 dias
+    - 1 hora retida por 455 dias
+- À medida que os dados envelhecem, são agregados e armazenados por um período mais longo com menor resolução
+- Estatísticas: obtém dados durante um período e os agrega de determinada forma
+- Percentil: posição relativa de um valor dentro do conjunto de dados
+
+## Alarmes CloudWatch
+
+- Alarme: monitora uma métrica durante um período de tempo
+- Estados: `ALARM` ou `OK` com base no valor de uma métrica em relação a um limiar ao longo do tempo
+- Os alarmes podem ser configurados com uma ou mais ações, que podem iniciar ações em nosso nome. As ações podem ser: enviar notificação para um tópico SNS, tentar uma modificação de política de auto scaling ou usar o Event Bridge para integrar com outros serviços
+- Métricas de alta resolução podem ter alarmes de alta resolução
+
+## Logs do CloudWatch
+
+- Os Logs do CloudWatch fornecem dois tipos de funcionalidades: ingestão e assinatura
+- O Logs do CloudWatch é um serviço público projetado para armazenar, monitorar e fornecer acesso a dados de log
+- Pode fornecer ingestão de logs para produtos AWS nativamente, mas também para on-premises, IoT ou qualquer aplicação
+- Agente CloudWatch: usado para fornecer ingestão para aplicações personalizadas
+- O CloudWatch também pode ingerir fluxos de log do VPC Flow Logs ou do CloudTrail (eventos de conta e chamadas de API AWS)
+- O Logs do CloudWatch é um serviço regional; certos serviços globais enviam seus logs para `us-east-1`
+- Os eventos de log consistem em 2 partes:
+    - **Timestamp**
+    - **Mensagem bruta**
+- Os Eventos de Log podem ser coletados em Fluxos de Log. Os Fluxos de Log são sequências de eventos de log compartilhando a mesma fonte
+- Grupos de Log: são coleções de Fluxos de Log. Podemos definir retenção, permissões e criptografia nos grupos de log. Por padrão, os grupos de log armazenam dados indefinidamente
+- Filtro de Métrica: pode ser definido no grupo de log e procurará padrões nos eventos de log. Essencialmente cria uma métrica dos fluxos de log ao procurar ocorrências de certos padrões definidos por nós (exemplo: logs de SSH com falha nos eventos)
+- Exportar logs do CloudWatch:
+    - **Exportação para S3**: podemos criar uma tarefa de exportação (`Create-Export-Task`) que pode levar até 12 horas. Não é em tempo real. É criptografado usando SSE-S3
+    - **Assinatura**: entrega de logs em tempo real. Devemos criar um filtro de assinatura para os seguintes destinos: Kinesis Data Firehose (quase em tempo real), OpenSearch (ElasticSearch) usando Lambda ou Lambda personalizado, Kinesis Data Streams (qualquer consumidor KCL)
+- Filtros de assinatura podem ser usados para criar uma arquitetura de agregação de logs
+
+## Dashboards CloudWatch
+
+- Uma ótima forma de configurar dashboards para acesso rápido às métricas principais
+- Os dashboards são globais
+- Os dashboards podem incluir gráficos de diferentes regiões
+- Podemos alterar o fuso horário e o intervalo de tempo dos dashboards
+- Podemos configurar atualização automática (10s, 1m, 2m, 5m, 15m)
+- Preços:
+    - 3 dashboards (até 50 métricas) gratuitamente
+    - $3/dashboard/mês
+
+## CloudWatch Synthetics Canary
+
+- Os Synthetics Canary são scripts configuráveis que monitoram APIs e URLs
+- Esses scripts destinam-se a reproduzir o que um cliente faria para encontrar problemas antes que o aplicativo seja implantado em produção
+- Também podem ser usados para verificar a disponibilidade e latência de nossos endpoints
+- Podem armazenar dados de tempo de carregamento e capturas de tela da UI
+- Têm integração com Alarmes CloudWatch
+- Os scripts podem ser escritos em Node.js ou Python
+- Fornecem acesso programático a um navegador Chrome sem interface gráfica
+- Podem ser executados uma vez ou regularmente
+- Blueprints do Canary:
+    - Monitor de Heartbeat: carrega URL, armazena captura de tela e um arquivo de arquivo HTTP
+    - API Canary: testa funções básicas de leitura e escrita de uma API REST
+    - Verificador de Links Quebrados: verifica todos os links dentro de uma página
+    - Monitoramento Visual: compara uma captura de tela tirada durante uma execução do canary com uma captura de tela de referência
+    - Gravador Canary: usado com o CloudWatch Synthetics Recorder - usado para gravar ações em um site e gerar automaticamente um script de teste para isso
+    - Construtor de Fluxo de Trabalho GUI: verifica se ações podem ser realizadas em uma página web (exemplo: testar uma página web com um formulário de login)
+
+---
+
+# CloudWatch
+
 - Provides services to ingest, store and manage metrics
 - It is a public service - provides public space endpoints
 - Many services have native management plan integration with CloudWatch, for example EC2. Also, EC2 provides external gathered information only, for metrics from inside an EC2 we can use CloudWatch agent

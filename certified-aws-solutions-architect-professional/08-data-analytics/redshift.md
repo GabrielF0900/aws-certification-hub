@@ -1,5 +1,65 @@
 # Amazon Redshift
 
+- É um data warehouse em escala petabyte
+- É projetado para relatórios e análise
+- É um banco de dados OLAP (baseado em colunas), não OLTP (baseado em linhas/transações)
+    - OLTP (Processamento de Transações Online): captura, armazena e processa dados de transações em tempo real
+    - OLAP (Processamento Analítico Online): projetado para consultas complexas para analisar dados históricos agregados de outros sistemas OLAP
+- Recursos avançados do Redshift:
+    - RedShift Spectrum: permite consultar dados do S3 sem carregá-los na plataforma Redshift
+    - Consulta Federada: consulta diretamente dados armazenados em fontes de dados remotas
+- O Redshift integra-se com o QuickSight para visualização
+- Fornece uma interface semelhante a SQL com conexões JDBC/ODBC
+- Por padrão, o Redshift é um produto provisionado; não é serverless (a AWS também oferece a opção Redshift Serverless). Tem tempo de provisionamento
+- Usa uma arquitetura de cluster. Um cluster é uma rede privada e não pode ser acessado diretamente
+- O Redshift é executado em uma AZ; não é altamente disponível por design
+- Todos os clusters têm um nó líder com o qual podemos interagir para realizar consultas, planejamento e agregação
+- Nós de computação: realizam consultas nos dados. Um nó de computação é particionado em fatias. Cada fatia recebe uma porção de memória e espaço em disco, onde processa uma porção da carga de trabalho. As fatias trabalham em paralelo; um nó pode ter 2, 4, 16 ou 32 fatias, dependendo da capacidade dos recursos
+- O Redshift é um serviço VPC; usa segurança VPC: permissões IAM, criptografia KMS em repouso, monitoramento CloudWatch
+- Roteamento VPC Aprimorado do Redshift:
+    - Por padrão, o Redshift usa rotas públicas para tráfego ao comunicar-se com serviços externos ou qualquer serviço AWS público (como S3)
+    - Quando habilitado, o tráfego é roteado com base nas configurações de rede da VPC (SG, ACLs, etc.)
+    - O tráfego é roteado com base na configuração de rede da VPC
+    - O tráfego pode ser controlado por grupos de segurança; pode usar DNS de rede; pode usar gateways VPC
+- Arquitetura do Redshift:
+    ![Arquitetura Redshift](images/RedshiftArchitecture.png)
+
+## Componentes do Redshift
+
+- **Cluster**: um conjunto de nós, que consiste em um nó líder e um ou mais nós de computação
+    - O Redshift cria um banco de dados quando provisionamos um cluster. Este é o banco de dados que usamos para carregar dados e executar consultas
+    - Podemos escalar o cluster para dentro ou para fora adicionando ou removendo nós. Além disso, podemos escalar o cluster para cima ou para baixo especificando um tipo de nó diferente
+    - O Redshift atribui uma janela de manutenção de 30 minutos aleatoriamente em um bloco de 8 horas por região, ocorrendo em um dia aleatório da semana. Durante essas janelas de manutenção, o cluster não está disponível para operações normais
+    - O Redshift suporta as plataformas EC2-VPC e EC2-Classic para iniciar um cluster. Criamos um grupo de sub-rede de cluster se estamos provisionando nosso cluster em nossa VPC, o que nos permite especificar um conjunto de sub-redes em nossa VPC
+- **Nós do Redshift**:
+    - O nó líder recebe consultas de aplicações clientes, analisa as consultas e desenvolve planos de execução de consultas. Em seguida, coordena a execução paralela desses planos com os nós de computação e agrega os resultados intermediários desses nós. Por fim, retorna os resultados para as aplicações clientes
+    - Os nós de computação executam os planos de execução de consultas e transmitem dados entre si para atender essas consultas. Os resultados intermediários são enviados ao nó líder para agregação antes de serem enviados de volta para as aplicações clientes
+    - Tipo de Nó:
+        - Tipo de nó de armazenamento denso (DS) - para grandes cargas de trabalho de dados e usa armazenamento em disco rígido (HDD)
+        - Tipos de nós de computação densa (DC) - otimizados para cargas de trabalho com uso intensivo de desempenho. Usa armazenamento SSD
+- **Grupos de Parâmetros**: um grupo de parâmetros que se aplicam a todos os bancos de dados que criamos no cluster. O grupo de parâmetros padrão tem valores predefinidos para cada um de seus parâmetros e não pode ser modificado
+
+## Resiliência e Recuperação do Redshift
+
+- O Redshift pode usar o S3 para backups na forma de snapshots
+- Existem 2 tipos de backups:
+    - Backups automáticos: ocorrem a cada 8 horas ou após cada 5 GB de dados, com retenção padrão de 1 dia (máx. 35). Os snapshots são incrementais
+    - Snapshots manuais: realizados após disparo manual; sem período de retenção
+- A restauração a partir de snapshots cria um cluster completamente novo; podemos escolher uma AZ funcional para provisionar
+- Podemos copiar snapshots para outra região, onde um novo cluster pode ser provisionado
+- Os snapshots copiados também podem ter períodos de retenção
+![Resiliência e Recuperação do Redshift](images/RedshiftDR.png)
+
+## Gerenciamento de Carga de Trabalho do Amazon Redshift (WLM)
+
+- Permite que os usuários gerenciem flexivelmente as prioridades dentro das cargas de trabalho para que consultas curtas e de execução rápida não fiquem presas em filas atrás de consultas de longa execução
+- O WLM do Amazon Redshift cria filas de consulta em tempo de execução de acordo com classes de serviço, que definem os parâmetros de configuração para vários tipos de filas, incluindo filas internas do sistema e filas acessíveis ao usuário
+- Do ponto de vista do usuário, uma classe de serviço acessível ao usuário e uma fila são funcionalmente equivalentes
+
+---
+
+# Amazon Redshift
+
 - It is petabyte scale data warehouse
 - It is designed for reporting and analytics
 - It is an OLAP (column based) database, not OLTP (row/transaction)
@@ -51,6 +111,6 @@
 
 ## Amazon Redshift Workload Management (WLM) 
 
-- Enables users to flexibly manage priorities within workloads so that short, fast-running queries won’t get stuck in queues behind long-running queries
+- Enables users to flexibly manage priorities within workloads so that short, fast-running queries won't get stuck in queues behind long-running queries
 - Amazon Redshift WLM creates query queues at runtime according to service classes, which define the configuration parameters for various types of queues, including internal system queues and user-accessible queues
 - From a user perspective, a user-accessible service class and a queue are functionally equivalent

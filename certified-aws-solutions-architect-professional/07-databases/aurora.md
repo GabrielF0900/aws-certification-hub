@@ -1,5 +1,83 @@
 ## Amazon Aurora
 
+## Arquitetura do Aurora
+
+- A arquitetura do Aurora é muito diferente do RDS
+- Usa a entidade base de um cluster, algo que outras instâncias de banco de dados RDS não têm
+- O Aurora não usa armazenamento local para as instâncias de computação; em vez disso, um cluster Aurora tem um volume personalizado compartilhado
+- Um cluster é composto por várias coisas importantes:
+    - Uma instância primária única + 0 ou mais réplicas
+    - As réplicas podem ser usadas para leitura durante operações normais
+- O Aurora usa um *Cluster*:
+    - Composto por uma instância primária única e 0 ou mais réplicas
+    - As réplicas podem ser usadas para leituras (diferente da réplica de espera no RDS)
+    - Armazenamento: o cluster usa um volume de cluster compartilhado (baseado em SSD por padrão). Fornece provisionamento mais rápido, disponibilidade melhorada e melhor desempenho. O tamanho pode chegar a 128 TiB
+    - O armazenamento tem 6 réplicas entre AZs. Os dados são replicados sincronamente. A replicação acontece no nível de armazenamento; nenhum recurso extra é consumido para replicação
+    - Por padrão, apenas a instância primária pode gravar no armazenamento; as réplicas e o primário podem realizar operações de leitura
+    - Auto-reparo: o Aurora pode reparar seus dados se uma réplica ou parte da réplica tiver uma falha de disco
+    - O Aurora usa o cluster para reparar os dados sem corrupção. Como resultado, o Aurora evita perda de dados e reduz a necessidade de restaurações pontuais ou restaurações de snapshots
+    - Com o Aurora, podemos ter até 15 réplicas; qualquer uma das réplicas pode ser utilizada em um failover
+    - Faturamento para armazenamento do Aurora:
+        - O armazenamento é cobrado pelo que consumimos até o limite de 128 TiB
+        - Marca d'água alta: somos cobrados pelo máximo de dados usados em um determinado momento; em caso de liberação de espaço, seremos cobrados pelo uso máximo consumido
+        - Caso precisemos reduzir dados significativamente, precisaremos migrar o banco de dados para outro cluster para evitar pagar pelo armazenamento
+        - Recentemente, o Aurora introduziu o redimensionamento dinâmico, onde temos que pagar apenas pelo que usamos. É recomendado atualizar nosso banco de dados para uma versão do Aurora que suporte redimensionamento dinâmico
+    - Os clusters Aurora usam endpoints, fornecendo múltiplos endpoints:
+        - **Endpoint do Cluster**: sempre aponta para a instância primária; pode ser usado para leituras e gravações
+        - **Endpoint do Leitor**: aponta para a instância primária e também para as réplicas de leitura. O Aurora realiza balanceamento de carga ao usar este endpoint
+        - **Endpoint Personalizado**: pode ser criado por nós
+        - **Endpoint de Instância**: cada instância tem seu próprio endpoint
+
+## Custos do Aurora
+
+- Sem opção de nível gratuito; o Aurora não suporta instâncias micro
+- Além do RDS singleAZ (micro), o Aurora oferece melhor valor em comparação com outras opções RDS
+- Computação: cobrança por hora, por segundo, mínimo de 10 minutos
+- Armazenamento: GB/mês consumido, custo de IO por requisição feita ao armazenamento compartilhado do cluster
+- Backups: 100% do tamanho do banco de dados em backups estão incluídos
+
+## Restauração, Clone e Backtrack do Aurora
+
+- Os backups no Aurora funcionam da mesma forma que em outros RDS
+- As restaurações criam um novo cluster
+- O Backtrack pode ser habilitado por cluster. Permitem reversões no local para um ponto anterior no tempo
+- Clone rápido: cria um novo banco de dados muito mais rápido do que copiar todos os dados. O Aurora faz referência ao armazenamento original; armazena apenas as diferenças entre os dados antigos e os novos
+
+## Aurora Serverless
+
+- Fornece uma versão do Aurora sem a necessidade de provisionar estaticamente a instância do banco de dados
+- Remove a sobrecarga de administração para gerenciar instâncias de banco de dados
+- O Aurora Serverless usa o conceito de ACU - Unidades de Capacidade Aurora: representam uma certa quantidade de computação e uma quantidade correspondente de memória
+- Podemos definir valores mínimos e máximos de ACU por cluster; pode chegar a 0
+- O faturamento por consumo é por segundo
+- O Aurora Serverless fornece a mesma resiliência que o Aurora provisionado (6 cópias entre AZs)
+- A arquitetura de cluster Aurora ainda existe, mas em forma de cluster serverless. Em vez de usar instâncias provisionadas, temos unidades de capacidade
+- As unidades de capacidade são alocadas de um pool quente de instâncias Aurora gerenciado pela AWS
+- As ACUs são sem estado, compartilhadas entre vários clientes AWS
+- Se a carga aumentar além do limite de ACU e o pool permitir, mais ACUs serão alocadas à instância
+- No Aurora Serverless, temos um Proxy Fleet compartilhado para gerenciamento de conexões:
+    - É usado para distribuir conexões de nós, usuários Aurora, para as unidades de capacidade Aurora
+    - Nunca nos conectamos diretamente ao Aurora; isso torna o scaling do Aurora transparente
+- Casos de uso do Aurora:
+    - Aplicações usadas com pouca frequência
+    - Novos aplicativos onde não temos certeza sobre os níveis de carga que serão colocados na aplicação
+    - Cargas de trabalho variáveis e/ou imprevisíveis
+    - Bancos de dados de desenvolvimento e teste: o Aurora pode ser configurado para se desligar
+    - Aplicações multi-tenant onde o scaling está alinhado com o tamanho da infraestrutura e a receita
+
+## Aurora Multi-Master
+
+- O modo padrão do Aurora é single-master: um endpoint de leitura/escrita e 0 ou mais réplicas de leitura
+- Em contraste com o modo padrão do Aurora, o multi-master oferece múltiplos endpoints que podem ser usados para leituras e gravações
+- Não há endpoint de cluster para usar; a aplicação é responsável pela conexão com as instâncias no cluster
+- Benefícios:
+    - Múltiplos endpoints de gravação; se tivermos uma aplicação que pode fazer failover entre endpoints, o tempo de failover pode ser significativamente reduzido
+    - A tolerância a falhas pode ser implementada no nível da aplicação, mas a aplicação precisa balancear a carga manualmente entre as instâncias
+
+---
+
+## Amazon Aurora
+
 ## Aurora Architecture
 
 - Aurora architecture is very different from RDS

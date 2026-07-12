@@ -1,5 +1,58 @@
 # AWS Trusted Advisor
 
+- Fornece orientação em tempo real para provisionar recursos de acordo com as melhores práticas da AWS
+- É um produto de nível de conta; não requer a instalação de nenhum agente
+- Fornece uma série de verificações e recomendações em 5 áreas principais:
+    - Otimização de Custos e Recomendações
+    - Desempenho
+    - Segurança
+    - Tolerância a Falhas
+    - Limite de Serviço
+- O Trusted Advisor não é um serviço gratuito, pelo menos se quisermos aproveitar ao máximo
+- A versão gratuita está disponível se a conta tiver planos de suporte básico ou desenvolvedor
+- A versão gratuita fornece 7 verificações básicas:
+    - Permissões de bucket S3 (permissões de acesso aberto)
+    - Grupos de Segurança - portas específicas sem restrição
+    - Uso de IAM
+    - MFA na Conta Raiz
+    - Snapshots Públicos do EBS
+    - Snapshots Públicos do RDS
+    - 50 verificações de limite de serviço: verifica os 50 limites de serviço mais comuns e identifica aqueles onde estamos acima de 80% desse limite
+- Qualquer coisa além dessas verificações básicas requer planos de suporte empresarial ou enterprise
+- Com suporte empresarial e enterprise, obtemos mais 115 verificações
+- Também obtemos acesso à API de Suporte da AWS
+- A API de Suporte da AWS permite acesso programático às funções de suporte da AWS:
+    - Podemos obter os nomes e identificadores das verificações que a AWS oferece
+    - Podemos solicitar a execução de uma verificação do Trusted Advisor em contas e recursos
+    - Permite obter resumos e informações detalhadas programaticamente
+    - Permite solicitar atualização do Trusted Advisor
+- A API de Suporte da AWS permite abrir tickets de suporte programaticamente e gerenciá-los
+- Com suporte empresarial e enterprise, obtemos integração com o CloudWatch => podemos definir respostas orientadas a eventos para ações
+
+## Planos de Suporte da AWS
+
+- Suporte Básico:
+    - Está incluído para clientes AWS e é gratuito
+    - Para o Trusted Advisor com este plano de suporte, obtemos 7 verificações básicas (veja acima)
+- Desenvolvedor:
+    - Para o Trusted Advisor, obtemos as mesmas 7 verificações básicas (veja acima)
+- Empresarial:
+    - Obtemos o conjunto completo de verificações e recomendações
+    - Obtemos acesso programático ao Trusted Advisor
+- Enterprise:
+    - Igual ao empresarial
+
+## Bom Saber
+
+- Podemos verificar se um bucket S3 é público, mas não podemos verificar se os objetos são públicos em um bucket. Para monitorar isso, poderíamos usar CloudWatch Events/S3 Events
+- Limites de Serviço:
+    - Os limites só podem ser monitorados no Trusted Advisor
+    - Casos precisam ser criados manualmente no Centro de Suporte da AWS para aumentar os limites
+
+---
+
+# AWS Trusted Advisor
+
 - Provides real time guidance to provision resources against AWS best practices
 - It is an account level product, requires no agent to be installed
 - Provides a number of checks and recommendations in 5 major areas:

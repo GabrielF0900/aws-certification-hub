@@ -1,5 +1,42 @@
 # Gateway Load Balancers (GWLB)
 
+- É um produto para nos ajudar a executar e escalar appliances de segurança de terceiros
+- Essas appliances podem ser firewalls, sistemas de detecção e prevenção de intrusões ou até ferramentas de análise de dados
+- Podemos usá-los para realizar inspeção e proteção transparente de tráfego de entrada e saída
+- Em alto nível, um GWLB tem dois componentes principais:
+    - Endpoints do GWLB: executam a partir de uma VPC onde o tráfego entra/sai por meio desses endpoints. São semelhantes a endpoints de interface com algumas melhorias importantes
+    - O próprio GWLB: são instâncias EC2 normais executando software de segurança
+- O GWLB precisa encaminhar o tráfego sem nenhuma alteração; a appliance de segurança precisa revisar os pacotes conforme são enviados/recebidos
+- O GWLB usa um protocolo chamado GENEVE, que é um protocolo de tunelamento de tráfego e metadados
+- Os GWLBs são dispositivos de camada 3/4, semelhantes ao NLB, mas integram-se com endpoints GWLB e encapsulam todo o tráfego entre eles e o destino usando o protocolo GENEVE. Quando a varredura é concluída, o tráfego é retornado pelo mesmo túnel ao GWLB, de onde, usando o endpoint GWLB, é enviado ao destino pretendido
+- O GWLB fará balanceamento de carga entre as appliances de segurança, para que possamos escalar horizontalmente
+- O GWLB gerencia a afinidade de fluxo: um fluxo de dados sempre usará a mesma appliance
+- Tabelas de rota de entrada:
+    - São colocadas no gateway de internet
+    - Influenciam o que acontece com o tráfego que chega à VPC
+    - Podem redirecionar o tráfego para endpoints do GWLB
+- Arquitetura do GWLB:
+
+    Abaixo está uma arquitetura onde instâncias EC2 estão sendo executadas em um par de sub-redes privadas seguidas por um ALB que está sendo executado em um par de sub-redes públicas. No lado direito temos uma VPC executando um conjunto de appliances de segurança dentro de um ASG que pode crescer ou diminuir com base na carga.
+
+    1. O tráfego atinge o IG que está configurado com tabela de rota que determina o que acontece quando o tráfego chega à VPC.
+    2. O tráfego é roteado para o endpoint GWLB.
+    3. O tráfego é encaminhado ao próprio GWLB que está sendo executado na VPC de segurança. Neste ponto, os pacotes ainda têm o endereço IP original.
+    4. Os pacotes são encapsulados usando o protocolo GENEVE e encaminhados para as appliances de segurança.
+    5. Uma vez que os pacotes são analisados, eles são retornados ao GWLB.
+    6. Os pacotes são desencapsulados e retornados de volta ao endpoint GWLB via internet.
+    7. Como os IPs originais são mantidos, o tráfego é roteado para o ALB usando a tabela de rota local.
+    8. O tráfego é encaminhado para a instância de aplicação escolhida.
+    9. O tráfego é retornado da instância de volta ao GWLB nos passos de 9 a 14, seguindo o mesmo fluxo que veio para a instância.
+    15. Os dados são enviados de volta ao cliente original usando o IG.
+
+
+    ![Arquitetura GWLB](images/GWLB3.png)
+
+---
+
+# Gateway Load Balancers (GWLB)
+
 - It is a product to help us run and scale third party security appliances
 - This appliances can be firewalls, intrusion detection and prevention systems or even data analysis tools
 - We can use these to perform inbound and outbound transparent traffic inspection and protection

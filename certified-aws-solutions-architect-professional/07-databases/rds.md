@@ -1,3 +1,166 @@
+# RDS - Serviço de Banco de Dados Relacional
+
+- O RDS é frequentemente descrito como um Database-as-a-service (DBaaS), mas isso não é preciso. Deveria ser chamado de Database Server as a Service (DBSaaS)
+- O RDS fornece instâncias de banco de dados gerenciadas, que podem conter um ou mais bancos de dados
+- Os benefícios do RDS são que não precisamos gerenciar o hardware físico, o sistema operacional do servidor ou o sistema de banco de dados em si
+- O RDS suporta MySQL, MariaDB, PostgreSQL, Oracle, Microsoft SQL Server
+- Amazon Aurora: é um mecanismo de banco de dados criado pela AWS e também podemos selecioná-lo para uso
+- Grupo de Sub-rede RDS: lista de sub-redes que um banco de dados RDS pode usar. Geralmente é a melhor prática ter um Grupo de Sub-rede por implantação de banco de dados
+
+## Instância de Banco de Dados RDS
+
+- Executa um dos poucos tipos de mecanismo de banco de dados mencionados acima
+- Pode conter múltiplos bancos de dados criados pelo usuário
+- Uma instância de banco de dados após a criação pode ser acessada usando seu nome de host (CNAME)
+- As instâncias RDS vêm em vários tipos e compartilham muitos recursos do EC2. Exemplo de instâncias: db.m5, db.r5, db.t3
+- As instâncias RDS podem ser Single AZ ou Multi AZ (failover ativo-passivo)
+- Quando uma instância é provisionada, ela terá um armazenamento dedicado alocado também (geralmente EBS)
+- O armazenamento alocado pode ser baseado em armazenamento SSD (IO1, GP2) ou magnético (principalmente para compatibilidade)
+- Faturamento para RDS:
+    - Somos cobrados com base no tamanho da instância em uma taxa horária
+    - Somos cobrados por instâncias adicionais usadas para implantações Multi AZ
+    - Também somos cobrados por armazenamento (GB/mês) + extra por IOPS no caso de IOPS provisionado (IO1)
+    - A transferência de dados também é cobrada se os dados estão chegando/saindo da internet/outras regiões
+    - Backups e snapshots também são cobrados (por GB por mês)
+    - O licenciamento, quando aplicável, também é cobrado
+
+## RDS Multi AZ
+
+- Existem 2 tipos de implantações Multi AZ:
+    - Multi AZ Instance (historicamente chamado de Multi AZ)
+    - Multi AZ Cluster
+- Multi AZ Instance:
+    - Usado para adicionar resiliência a uma instância RDS
+    - A replicação acontece no nível de armazenamento
+    - Habilita a replicação síncrona entre instâncias primária e em espera
+    - Multi AZ é uma opção que pode ser habilitada em uma instância RDS; quando habilitada, hardware secundário é alocado em outra AZ (réplica em espera)
+    - O RDS é acessado via endereço de endpoint fornecido (CNAME)
+    - Com uma única instância, o endereço do endpoint aponta para a própria instância; com Multi AZ, por padrão o endpoint aponta para a instância primária
+    - Não podemos acessar diretamente a instância em espera
+    - Se ocorrer um erro com a instância primária, o RDS altera automaticamente o endpoint para apontar para a réplica em espera. Este failover ocorre em cerca de 60-120 segundos
+    - Multi AZ não está disponível no nível gratuito (geralmente custa o dobro do que custaria Single AZ)
+    - Os backups são feitos a partir da instância em espera (remove o impacto no desempenho)
+    - Em caso de failover, o nome DNS será atualizado para apontar para a instância de réplica em espera. Como esta é uma alteração de DNS, geralmente leva entre 60-120 segundos para ocorrer. Isso pode ser reduzido removendo o cache de DNS na aplicação
+    - Com a instância Multi AZ, temos UMA réplica em espera. Esta réplica não pode ser usada para leituras e gravações. Aguarda que um failover aconteça e então pode ser usada
+    - Os backups podem ser feitos a partir da instância em espera para melhorar o desempenho
+    - Failovers podem ocorrer se:
+        - Interrupção de AZ
+        - Falha da instância primária
+        - Failover manual
+        - Alteração do tipo de instância
+        - Aplicação de patches de software
+- Multi AZ Cluster:
+    - O RDS é capaz de ter um escritor replicando para duas instâncias de leitura. Podemos ter apenas 2 leitores!
+    - Esses leitores estão em AZs diferentes em comparação ao escritor
+    - Em comparação com o modo de cluster Aurora, o Multi AZ cluster pode ter apenas 2 leitores, enquanto o Cluster Aurora pode ter mais
+    - No caso de cluster Multi AZ, as instâncias para as quais os dados são replicados são utilizáveis, em comparação com o modo de instância Multi AZ, quando não são
+    - Em termos de replicação, os dados são vistos como confirmados quando um dos leitores confirma que foram gravados
+    - Outras comparações com o Cluster Aurora:
+        - No cluster Multi AZ do RDS, cada instância tem seu próprio armazenamento; no caso do Aurora, isso não acontece
+        - Como o Aurora, o cluster pode ser acessado com múltiplos endpoints:
+            - Endpoint do Cluster: CNAME do banco de dados, aponta para o escritor; pode ser usado para leituras/gravações e administração
+            - Endpoint do Leitor: aponta para qualquer endpoint disponível para leituras (pode apontar para a instância escritora em certos casos). Geralmente aponta para as instâncias de leitura dedicadas
+            - Endpoints de Instância: cada instância tem um endpoint; geralmente não é recomendado ser usado
+    - Geralmente o Multi AZ Cluster é executado em hardware mais rápido: Graviton + armazenamento SSD NVME local. Quaisquer gravações são escritas no armazenamento local super rápido; depois disso, são descarregadas para o EBS
+    - As replicações são feitas via logs de transação => muito mais eficientes do que a instância Multi AZ. Isso também permite failover mais rápido: ~35 segundos + qualquer tempo necessário para aplicar os logs de transação
+
+## Backups e Restaurações do RDS
+
+- RPO (Recovery Point Objective): tempo entre o último backup funcional e a falha. Quanto menor o valor RPO, mais cara costuma ser a solução
+- RTO (Recovery Time Objective): tempo entre a falha e o sistema totalmente recuperado. Pode ser reduzido com hardware sobressalente, processos predefinidos, etc. Quanto menor o valor RTO, mais caro o sistema costuma ser
+- Tipos de backup do RDS:
+    - Snapshots manuais:
+        - Devem ser executados manualmente ou via script
+        - O primeiro snapshot é o conteúdo completo do banco de dados; os subsequentes são incrementais
+        - Quando qualquer snapshot ocorre, há uma breve interrupção no fluxo de dados entre o recurso de computação e o armazenamento (sem efeito perceptível no caso de Multi AZ, já que o backup é feito a partir da instância em espera)
+        - Os snapshots manuais não expiram
+        - Quando excluímos uma instância RDS, a AWS oferece a opção de fazer um snapshot final
+    - Backups automáticos:
+        - Ocorrem uma vez por dia (a janela de backup é definida na instância)
+        - Snapshots que ocorrem automaticamente; o primeiro sendo um snapshot completo, os seguintes sendo incrementais
+        - Além dos snapshots automatizados, a cada 5 minutos os logs de transação são gravados no S3
+        - Os backups automáticos não são retidos indefinidamente; podemos definir o período de retenção entre 0 e 35 dias
+        - Os backups automáticos podem ser retidos após a exclusão de um banco de dados, mas ainda expiram após o período de retenção
+        - Podemos replicar backups para outra região: tanto snapshots quanto logs de transação podem ser replicados. Cobranças se aplicam à cópia de dados entre regiões e a qualquer armazenamento usado na região de destino
+        - A replicação entre regiões deve ser configurada explicitamente nos backups automatizados
+- Os backups são armazenados em buckets S3 gerenciados pela AWS (os backups não são visíveis diretamente para nós no S3) => quaisquer dados no S3 são resilientes regionalmente
+- Os backups do RDS são feitos a partir da instância em espera caso o Multi AZ esteja habilitado
+- Restaurações do RDS:
+    - O RDS cria uma nova instância RDS quando restauramos um backup automatizado ou um snapshot manual => um novo endereço será criado para o banco de dados
+    - Quando restauramos um snapshot, restauramos nosso banco de dados para um único ponto no tempo, quando a criação do snapshot ocorreu
+    - Com backups automatizados, podemos escolher um ponto no tempo para onde queremos restaurar (qualquer ponto de 5 minutos)
+    - Restaurar snapshots não é um procedimento rápido (importante para o RTO)
+
+## Réplicas de Leitura do RDS
+
+- Fornecem 2 benefícios principais: desempenho e disponibilidade
+- As réplicas de leitura são réplicas somente leitura de uma instância RDS
+- As réplicas de leitura podem ser usadas apenas para leitura de dados
+- O modo Cluster Multi AZ é semelhante a como as réplicas de leitura funcionam, mas para réplicas de leitura, devemos pensar nelas como coisas separadas:
+    - Elas não fazem parte da instância principal do banco de dados
+    - Têm seu próprio endereço de endpoint
+    - Requerem suporte da aplicação
+    - Não há failover automático para uma réplica de leitura
+- A instância primária e a réplica de leitura são mantidas em sincronia usando replicação assíncrona
+- Pode haver uma pequena quantidade de lag no caso de replicação
+- As réplicas de leitura podem ser criadas em uma AZ diferente ou região diferente (CRR - Replicação entre Regiões)
+- Podemos ter 5 réplicas de leitura diretas por instância de banco de dados
+- Cada réplica de leitura fornece uma instância adicional de desempenho de leitura
+- As réplicas de leitura também podem ter réplicas de leitura, mas o lag começa a ser um problema neste caso
+- As réplicas de leitura podem fornecer melhorias de desempenho globais
+- Snapshots e backups melhoram o RPO, mas não o RTO. As réplicas de leitura oferecem RPO quase zero
+- As réplicas de leitura podem ser promovidas a primárias em caso de falha. Isso também oferece baixo RTO (lags de minutos)
+- As réplicas de leitura podem replicar a corrupção de dados
+
+## Segurança de Dados
+
+- Com todos os mecanismos RDS, podemos usar criptografia em trânsito (SSL/TLS). Isso pode ser definido como obrigatório por usuário
+- Para criptografia em repouso, o RDS suporta criptografia de volume EBS usando KMS, que é gerenciada pelo host EBS e é invisível para o mecanismo de banco de dados
+- Podemos usar chaves de dados CMK gerenciadas pelo cliente ou geradas pela AWS para criptografia em repouso
+- Armazenamento, logs e snapshots serão criptografados com a mesma chave mestra do cliente
+- A criptografia não pode ser removida após ser ativada
+- Além da criptografia em repouso, MSSQL e Oracle suportam TDE (Transparent Data Encryption) - criptografia no nível do mecanismo de banco de dados
+- Oracle suporta TDE com CloudHSM, oferecendo criptografia muito mais forte
+- Autenticação IAM com RDS:
+    - Normalmente, o login é controlado com usuários locais do banco de dados (nome de usuário/senha)
+    - Podemos configurar o RDS para permitir autenticação IAM (apenas autenticação, não autorização; a autorização é gerenciada internamente!):
+    ![Hooks de Ciclo de Vida do ASG](images/RDSIAMAuthentication.png)
+
+## Proxy RDS
+
+- Abrir e fechar conexões consome recursos e leva tempo => no caso em que queremos apenas ler/gravar uma pequena quantidade de dados, a sobrecarga de estabelecer uma conexão cria uma latência significativa
+- Lidar com falhas de instâncias de banco de dados é difícil; isso adiciona sobrecarga significativa e riscos à nossa aplicação
+- Os proxies de banco de dados podem ajudar, mas gerenciá-los nem sempre é trivial (scaling, resiliência)
+- No caso de um proxy RDS, nossa aplicação se conecta ao proxy, que lida com o pool de conexões e a conectividade com o banco de dados
+- Os proxies RDS fornecem multiplexação: um número menor de conexões pode ser usado para se conectar ao banco de dados enquanto um número maior de aplicações usa o banco de dados através do proxy. Isso ajuda a reduzir a carga no banco de dados
+- O Proxy RDS pode ajudar com eventos de failover de banco de dados, abstraindo-os das aplicações. O proxy pode aguardar até que uma instância de banco de dados saudável esteja disponível e conectar-se a ela automaticamente
+- Quando usar o Proxy RDS?
+    - No caso de erros como `Too many connections`. Um proxy RDS pode reduzir o número de conexões ao banco de dados enquanto é capaz de lidar com muito mais conexões das aplicações para si mesmo
+    - Útil ao usar AWS Lambda; não precisaremos invocar uma nova conexão após cada invocação de nossa função. Economiza tempo reutilizando conexões e autenticação IAM
+    - Útil para aplicações de longa execução (apps SAAS) reduzindo a latência
+- Fatos-chave do Proxy RDS:
+    - Totalmente gerenciado pelo RDS/Aurora
+    - Por padrão, fornece auto scaling e HA
+    - Fornece pool de conexões, que reduz a carga do banco de dados
+    - Acessível apenas de uma VPC; não acessível da internet pública
+    - Acessado via Endpoint do Proxy
+    - Pode forçar conexão SSL/TLS
+    - Pode reduzir o tempo de failover em mais de 60% no caso do Aurora
+    - Abstrai a falha de um banco de dados da nossa aplicação
+
+## RDS Personalizado (RDS Custom)
+
+- Preenche a lacuna entre o produto RDS principal e o EC2 executando um mecanismo de banco de dados
+- O RDS principal é um serviço de banco de dados totalmente gerenciado => o acesso ao SO/Mecanismo é limitado
+- Em contraste, bancos de dados executados no EC2 são autogerenciados; isso pode ter uma sobrecarga de gerenciamento significativa
+- O RDS Custom preenche essa lacuna; podemos utilizar o RDS, mas ainda obter acesso à personalização que teríamos ao executar uma instância de banco de dados no EC2
+- Atualmente, o RDS Custom funciona com MSSQL ou Oracle
+- Podemos nos conectar ao sistema operacional subjacente usando SSH, RDP ou Session Manager
+- O RDS Custom será executado em nossa conta AWS. O RDS clássico é executado em um ambiente gerenciado pela AWS
+- Se precisarmos realizar customização do RDS para RDS Custom, precisamos verificar nas configurações de Automação de Banco de Dados para garantir que não teremos nenhuma interrupção causada pela Automação de Banco de Dados. Precisamos pausar a Automação de Banco de Dados durante este período
+
+---
+
 # RDS - Relational Database Service
 
 - RDS is often described as a Database-as-a-service (DBaaS) but this is not accurate. It should be named Database Server as a Service (DBSaaS) product

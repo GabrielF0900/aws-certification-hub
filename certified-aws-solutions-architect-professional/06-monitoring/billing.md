@@ -1,3 +1,43 @@
+# Gerenciamento de Faturamento e Custos da AWS
+
+## Cost Explorer
+
+- Rastreia e analisa seu uso da AWS. É gratuito para todas as contas
+- Inclui um relatório padrão que ajuda a visualizar os custos e o uso associados aos nossos CINCO principais serviços AWS que geram custos, e fornece um detalhamento de todos os serviços na visualização em tabela
+- Podemos visualizar dados dos últimos 12 meses, prever quanto provavelmente gastaremos nos próximos três meses e obter recomendações sobre quais Instâncias Reservadas comprar
+- O Cost Explorer deve ser habilitado antes de poder ser usado. O proprietário da conta pode habilitá-lo
+
+## Relatórios de Custo e Uso da AWS
+
+- O relatório de Custo e Uso da AWS fornece informações sobre nosso uso de recursos AWS e os custos estimados para esse uso
+- O relatório de Custo e Uso da AWS é um arquivo `.csv` ou uma coleção de arquivos `.csv` armazenados em um bucket S3. Qualquer pessoa com permissões para acessar o bucket S3 especificado pode ver os arquivos de relatório de faturamento
+- Podemos usar o relatório de Custo e Uso para rastrear a utilização, as cobranças e as alocações de Instâncias Reservadas
+- Para granularidade de tempo, podemos escolher uma das seguintes opções:
+    - Por hora: se quisermos que os itens no relatório sejam agregados por hora
+    - Diário: se quisermos que os itens no relatório sejam agregados por dia
+    - Mensal: se quisermos que os itens no relatório sejam agregados por mês
+- O relatório pode ser carregado automaticamente no AWS Redshift e/ou AWS QuickSight para análise
+
+## AWS Budgets
+
+- Nos permite definir orçamentos personalizados que nos alertarão quando nossos custos ou uso excederem ou for previsto exceder o valor orçado
+- Com o Budgets, podemos visualizar as seguintes informações:
+    - Quão perto nosso plano está do valor orçado ou dos limites do nível gratuito
+    - Nosso uso até o momento, incluindo quanto usamos de nossas Instâncias Reservadas e Planos de Economia comprados
+    - Nossas cobranças estimadas atuais da AWS e quanto nosso uso previsto incorrerá em cobranças até o final do mês
+    - Quanto do nosso orçamento foi usado
+- As informações do orçamento são atualizadas até três vezes ao dia
+- Tipos de Orçamentos:
+    - **Orçamentos de Custo**: planejar quanto queremos gastar em um serviço
+    - **Orçamentos de Uso**: planejar quanto queremos usar de um ou mais serviços
+    - **Orçamentos de Utilização de RI**: definir um limiar de utilização e receber alertas quando o uso de RI cair abaixo desse limiar
+    - **Orçamentos de Cobertura de RI**: definir um limiar de cobertura e receber alertas quando o número de horas de instância cobertas por RIs cair abaixo desse limiar
+- Os orçamentos podem ser rastreados diariamente, mensalmente, trimestralmente ou anualmente, e podemos personalizar as datas de início e término
+- Os alertas de orçamento podem ser enviados por e-mail e/ou tópico Amazon SNS
+- Os dois primeiros orçamentos criados são gratuitos
+
+---
+
 # AWS Billing and Cost Management
 
 ## Cost Explorer

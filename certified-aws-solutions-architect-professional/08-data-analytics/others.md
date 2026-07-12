@@ -1,3 +1,30 @@
+# Outros Produtos Relacionados à Análise de Dados
+
+## AWS Data Exchange
+
+- O AWS Data Exchange é um serviço que ajuda a AWS a compartilhar e gerenciar facilmente direitos de dados de outras organizações em escala
+- Como receptor de dados, podemos rastrear e gerenciar todas as nossas concessões de dados e assinaturas de dados do AWS Marketplace em um só lugar
+- Para remetentes de dados, o AWS Data Exchange elimina a necessidade de criar e manter qualquer infraestrutura de entrega e direitos de dados
+
+## AWS Data Pipeline
+
+- O AWS Data Pipeline é um serviço web que podemos usar para automatizar o movimento e a transformação de dados
+- Podemos definir fluxos de trabalho orientados a dados, de modo que as tarefas possam depender da conclusão bem-sucedida de tarefas anteriores
+- Componentes de um pipeline de dados:
+    - Definição do Pipeline: especifica a lógica de negócios do nosso gerenciamento de dados
+    - Pipeline: agenda e executa tarefas criando instâncias Amazon EC2 para realizar as atividades de trabalho definidas
+    - Executores de Tarefas (Task Runners): pesquisam tarefas e as executam. Por exemplo, o Task Runner pode copiar arquivos de log para o Amazon S3 e iniciar clusters Amazon EMR. O Task Runner é instalado e executado automaticamente nos recursos criados pelas definições de pipeline
+- Exemplos de casos de uso:
+    - Podemos usar o AWS Data Pipeline para arquivar os logs do servidor web no Amazon Simple Storage Service (Amazon S3) todos os dias e, em seguida, executar um cluster Amazon EMR semanalmente sobre esses logs para gerar relatórios de tráfego
+
+## AWS Lake Formation
+
+- O AWS Lake Formation é um serviço que facilita a configuração de um data lake seguro em dias
+- Criar um data lake com o Lake Formation é tão simples quanto definir fontes de dados e quais políticas de acesso e segurança de dados queremos aplicar
+- Ajuda a coletar e catalogar dados de bancos de dados e armazenamento de objetos, mover os dados para um novo data lake Amazon S3, limpar e classificar dados usando algoritmos de aprendizado de máquina e proteger o acesso a dados sensíveis
+
+---
+
 # Other Data Analytics Related Products
 
 ## AWS Data Exchange

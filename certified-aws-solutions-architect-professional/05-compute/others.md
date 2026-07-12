@@ -1,3 +1,32 @@
+# Outros Produtos Relacionados à Computação
+
+## AWS Outposts
+
+- O AWS Outposts é um serviço totalmente gerenciado que estende a infraestrutura, serviços, APIs e ferramentas da AWS para as instalações do cliente
+- Um Outpost é um conjunto de capacidade de computação e armazenamento da AWS implantado no site do cliente
+- A AWS opera, monitora e gerencia essa capacidade como parte de uma Região AWS
+- Podemos criar sub-redes no nosso Outpost e especificá-las ao criar recursos AWS como instâncias EC2, volumes EBS, clusters ECS e instâncias RDS
+- As instâncias nas sub-redes do Outpost se comunicam com outras instâncias na Região AWS usando endereços IP privados, todos dentro da mesma VPC
+- Nem todo serviço AWS é suportado dentro de um Outpost; para uma lista, veja: https://docs.aws.amazon.com/outposts/latest/userguide/what-is-outposts.html#services
+
+## AWS Wavelength
+
+- O AWS Wavelength é como ter uma Zona de Disponibilidade na rede de "borda" de uma operadora de telefonia
+- O Wavelength implanta serviços padrão de computação e armazenamento da AWS na borda das redes 5G das operadoras de telecomunicações
+- Podemos estender uma nuvem privada virtual (VPC) para uma ou mais Zonas Wavelength
+- Podemos então usar recursos AWS como instâncias do Amazon Elastic Compute Cloud (Amazon EC2) para executar aplicações que exigem baixa latência ou resiliência de borda dentro da Zona Wavelength
+- Recursos AWS no Wavelength:
+    - EC2 Auto Scaling
+    - Clusters EKS
+    - Clusters ECS
+    - EC2 System Manager
+    - CloudWatch, CloudTrail
+    - CloudFormation
+    - Application Load Balancers
+- Os serviços no Wavelength fazem parte de uma VPC que está conectada por uma conexão confiável a uma região AWS
+
+---
+
 # Other Compute Related Products
 
 ## AWS Outposts
