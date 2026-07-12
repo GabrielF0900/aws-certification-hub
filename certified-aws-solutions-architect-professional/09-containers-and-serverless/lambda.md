@@ -1,5 +1,186 @@
 # AWS Lambda
 
+- Lambda é um produto de Função como Serviço (Function-as-a-Service - FaaS). Nós fornecemos código especializado de curta duração e focado para o Lambda, e ele se encarregará de executá-lo e nos cobrar apenas pelo que consumimos
+- Toda função Lambda usa um tempo de execução (runtime) suportado, por exemplo: Python 3.8, Java 8, NodeJS
+- Toda função Lambda é carregada e executada em um ambiente de tempo de execução
+- Quando criamos uma função, definimos os recursos que ela usará. Definimos a memória diretamente e a alocação de uso da CPU indiretamente (com base na quantidade de memória)
+- Somos cobrados apenas pela duração em que a função está em execução, com base no número de invocações e nos recursos especificados
+- Lambda é uma parte fundamental das arquiteturas serverless na AWS
+- Lambda tem suporte para os seguintes runtimes:
+    - Python
+    - Ruby
+    - Go
+    - Java
+    - C#
+    - Personalizado usando camadas Lambda (Lambda layers), como Rust
+- Tamanho do pacote de implantação do Lambda:
+    - 50 MB compactado (zipped)
+    - 250 MB descompactado (unzipped)
+    - Até 10 GB como imagem Docker
+- Funções Lambda não mantêm estado (stateless), o que significa que nenhum dado sobra após uma invocação
+- Ao criar uma função Lambda, definimos a memória. A memória pode ser entre 128 MB e 10240 MB, em incrementos de 1 MB
+- Não definimos diretamente a vCPU alocada para cada função; ela escalará automaticamente com a memória: 1769 MB de memória fornecem 1 vCPU
+- O ambiente de execução possui 512 MB (por padrão) de armazenamento disponível como `/tmp`. Podemos dimensionar esse armazenamento para até 10240 MB. Podemos usar esse armazenamento para o que precisarmos, desde que assumamos que ele estará vazio a cada execução da função
+- A função Lambda pode rodar por até 15 minutos; após esse tempo, ocorrerá um timeout (tempo limite esgotado)
+- A segurança para uma função Lambda é controlada pela função de execução (execution role). Esta é uma função IAM anexada ao Lambda. Ela pode ter permissões para integração com outros serviços da AWS
+
+## Redes Lambda (Lambda Networking)
+
+- As funções Lambda podem ter 2 tipos de modos de rede:
+    - Pública (padrão):
+        - A Lambda pode acessar serviços públicos da AWS como SQS, DynamoDB, etc. e também serviços baseados na internet
+        - A Lambda possui conectividade de rede para serviços públicos rodando na internet
+        - Oferece o melhor desempenho para a Lambda, nenhuma rede específica do cliente é necessária
+        - No modo de rede pública, a função Lambda não poderá acessar recursos dentro de uma VPC, a menos que os recursos tenham IPs públicos e os controles de segurança permitam acesso externo
+    - Rede VPC:
+        - As funções Lambda rodarão dentro de uma VPC, portanto acessarão tudo na VPC, assumindo que NACLs e SGs permitam o acesso
+        - Elas não conseguirão acessar serviços fora da VPC, a menos que haja configuração de rede na VPC permitindo acesso externo
+        - A Lambda precisa da permissão `EC2Networking` para poder criar ENIs na VPC
+        - Funções Lambda baseadas em VPC não rodam diretamente na VPC; elas usarão uma ENI compartilhada para acessar recursos na VPC, desde que todas as funções tenham o mesmo Security Group (Grupo de Segurança). Caso novos Security Groups sejam anexados a uma certa Lambda, novas ENIs serão colocadas dentro da VPC
+        - Na criação da função, uma certa ENI pode ser criada para acessar a VPC. A configuração inicial levaria até 90 segundos. Essa configuração ocorrerá apenas uma vez, não a cada invocação
+
+## Segurança da Lambda
+
+- Existem 2 partes principais do modelo de segurança:
+    - As Funções Lambda assumirão uma role de execução (execution role) para acessar outros recursos da AWS
+    - Políticas de recursos (Resource policies): similares às políticas de recursos do S3. Permitem que contas externas invoquem funções Lambda ou que certos serviços usem funções Lambda. As políticas de recursos podem ser modificadas usando CLI/API (atualmente não podem ser alteradas no console)
+
+## Logs da Lambda
+
+- A Lambda usa CloudWatch Logs e X-Ray
+- Os logs das execuções da Lambda são armazenados no CloudWatch Logs
+- Detalhes sobre métricas da Lambda são armazenados no CloudWatch Metrics
+- A Lambda pode ser integrada ao X-Ray para rastreamento distribuído (distributed tracing)
+- Para que a Lambda consiga gerar logs, precisamos dar permissões via execution role (role de execução)
+
+## Invocações da Lambda
+
+- Existem 3 formas de invocar funções Lambda:
+    - **Invocação síncrona (Synchronous invocation)**:
+        - Linha de comando ou API invocando a função diretamente
+        - O CLI ou API esperará até a função retornar
+        - O API Gateway também invocará Lambdas sincronicamente, um caso de uso para muitas aplicações serverless
+        - Quaisquer erros ou tentativas (retries) devem ser tratados no lado do cliente
+    - **Invocação assíncrona (Asynchronous invocation)**:
+        - Utilizado tipicamente quando serviços AWS invocam a função (exemplo: eventos S3)
+        - O serviço não espera pela resposta (dispare e esqueça / fire and forget)
+        - A Lambda é responsável por qualquer falha. O reprocessamento acontecerá entre 0 e 2 vezes
+        - A função deve ser idempotente para ser executada novamente
+        - A Lambda pode ser configurada para enviar eventos a uma DLQ (Dead Letter Queue) caso o processamento não tenha sucesso após o número de tentativas
+        - Destinos: eventos processados por Lambdas podem ser entregues a destinos como SQS, SNS, outra Lambda ou EventBridge. Eventos de sucesso e falha podem ser enviados a destinos diferentes
+    - **Mapeamento de Fonte de Eventos (Event Source mapping)**:
+        - Utilizado tipicamente em streams ou filas que não geram eventos sozinhas (Kinesis, DynamoDB streams, SQS)
+        - Mapeadores de fonte de eventos (Event Source mappers) consultam (poll) esses streams e recuperam lotes (batches). Esses lotes podem ser quebrados em pedaços e enviados a várias invocações Lambda para processamento
+        - Não podemos ter um lote parcialmente bem-sucedido; ou tudo funciona, ou nada funciona
+- No caso do processamento de eventos em invocação assíncrona, para processar o evento não precisamos explicitamente de permissão para ler de quem enviou (sender)
+- No caso do mapeamento de fonte de eventos, o mapeador está lendo da fonte. O mapeamento usa permissões da role de execução da Lambda para acessar o serviço de origem
+- Mesmo que a função não leia dados diretamente do stream, a role de execução precisa de direitos de leitura para lidar com o lote de eventos
+- Qualquer lote que falhe consistentemente ao ser processado pode ser enviado para uma fila SQS ou tópico SNS para processamento posterior
+
+## Versões da Lambda
+
+- Podemos definir diferentes versões para uma determinada função
+- Uma versão de uma função é o código + a configuração da função
+- Quando publicamos uma versão, ela se torna imutável, não podendo mais ser alterada. Ela até ganha um ARN (Amazon Resource Name) próprio
+- `$Latest` (A mais recente) aponta para a última versão não publicada da Lambda (não é imutável)
+- Podemos também definir aliases (DEV, STAGE, PROD) que apontam para uma versão da função. Aliases podem ser alterados para apontar para outras versões
+
+## Tempos de Inicialização da Lambda (Start-up Times)
+
+- O código Lambda roda dentro de um ambiente de execução (contexto de execução)
+- Na primeira invocação, esse contexto de execução precisa ser criado e isso leva tempo
+- Esse processo é conhecido como cold start (partida a frio) e pode levar 100ms ou mais
+- Se a função for invocada novamente sem muito intervalo, pode usar o mesmo contexto de execução. Isso é chamado de warm start (partida a quente)
+- Cada invocação de função roda num ambiente de execução por vez. Se múltiplas instâncias paralelas forem necessárias, os contextos exigirão cold starts
+- **Concorrência provisionada (Provisioned concurrency)**: podemos provisionar um ou mais contextos de execução com antecedência para invocações da Lambda
+- Para melhorar a performance, podemos usar a pasta `/tmp` para baixar dados previamente. Se outra invocação usar o mesmo contexto de execução, ela conseguirá acessar os dados já baixados
+- Podemos criar conexões de banco de dados fora do manipulador da Lambda (Lambda handler). Elas também estarão disponíveis para outras invocações depois
+
+## Manipulador de Função Lambda (Lambda Function Handler)
+
+- Execuções de funções Lambda têm ciclos de vida
+- O código da função roda dentro de um ambiente de execução
+- Fases do ciclo de vida:
+    - `INIT`: cria ou "descongela" o ambiente de execução
+        - Possui os seguintes subcomponentes:
+            - `EXTENSION INIT` (Inicialização de Extensão)
+            - `RUNTIME INIT` (Inicialização de Tempo de Execução)
+            - `FUNCTION INIT` (Inicialização de Função)
+        - A fase Init roda apenas em cold-starts (partidas a frio)
+    - `INVOKE`: executa o manipulador de função (cold start)
+    - `NEXT INVOKE`(s) (PRÓXIMAS INVOCAÇÕES): warm start usando o mesmo ambiente
+    - `SHUTDOWN`: o ambiente de execução é terminado após um período de inatividade
+        - Possui os seguintes subcomponentes:
+            - `RUNTIME SHUTDOWN`
+            - `EXTENSION SHUTDOWN`
+        - Podemos usar a Concorrência Provisionada para evitar um cold-start no caso de a Lambda ser terminada
+
+## Versões e Aliases da Lambda
+
+- Funções não publicadas podem ser alteradas e implantadas
+- A versão `$LATEST` do código da Lambda pode ser editada e implantada
+- Podemos pegar o estado atual da função e publicá-lo, o que criará uma versão imutável
+- Se a função for publicada, o código, as dependências, as configurações de runtime e variáveis de ambiente na versão criada não poderão ser editados
+- Cada versão ganha um ARN único (ARN Qualificado)
+- ARN não qualificado (Unqualified ARN) aponta para a função sem uma versão específica (`$LATEST`)
+- Um alias é um ponteiro para a versão de uma função
+- Exemplo: PROD => function:1, BETA => function:2
+- Cada alias tem um ARN único
+- Aliases podem ser atualizados, mudando a versão a que fazem referência
+- Úteis para deployments PROD/DEV, BLUE/GREEN, testes A/B
+- Também podemos usar roteamento por alias (alias routing): enviar uma certa porcentagem de requisições para a v1 e outra porcentagem para a v2. Ambas as versões precisam da mesma role, a mesma DLQ (ou nenhuma DLQ) será usada e ambas precisam estar publicadas
+
+## Variáveis de Ambiente da Lambda
+
+- Pares de chave e valor associados às funções Lambda
+- Por padrão, são associadas ao `$LATEST` - podem ser editadas
+- Se forem publicadas, não poderão ser editadas
+- Elas podem ser acessadas de dentro do ambiente de execução
+- As variáveis de ambiente podem ser criptografadas com o KMS
+- Permitem que a execução do código seja ajustada com base em variáveis
+
+## Camadas Lambda (Lambda Layers)
+
+- Usadas para separar bibliotecas e dependências das funções Lambda
+- Reduz o tamanho do pacote de implantação
+- Camadas podem ser reutilizadas por múltiplas funções Lambda
+- Bibliotecas nas camadas são extraídas na pasta `/opt`
+- Camadas permitem novos runtimes que não são suportados explicitamente pela AWS
+
+## Imagens de Contêiner Lambda
+
+- Até pouco tempo, o Lambda era considerado um produto Function as a Service (FaaS), o que significava a criação de uma função, envio de código e execução
+- Muitas organizações usam contêineres e processos CI/CD criados para contêineres
+- O Lambda agora é capaz de usar imagens de contêiner
+- É uma forma alternativa de empacotar o código da função e usá-lo com o produto Lambda
+- Lambda Runtime API - tem que ser incluída nas imagens de contêiner, é um pacote que permite a interação entre o contêiner e a Lambda
+- AWS Lambda Runtime Interface Emulator (RIE): usado para testes locais do Lambda
+
+## Lambda e ALB (Application Load Balancer)
+
+- Funções Lambda podem ser registradas em grupos de destino (target groups) de um ALB
+- A comunicação entre o usuário e o ALB é via HTTP/HTTPS, não havendo diferença em relação a se conectar a um servidor clássico (EC2) da perspectiva do usuário
+- Quando o ALB recebe uma requisição do cliente, ele invoca de forma síncrona a função Lambda
+- O LB passa uma estrutura JSON para a função Lambda, dentro da estrutura `Event`. Isso tem que ser interpretado pela Lambda. O que acontece na prática é que o LB traduz o request HTTP(S) para um evento compatível com a Lambda, ao qual a Lambda responde com um objeto JSON que é traduzido de volta para resposta HTTP/HTTPS
+- Cabeçalhos de múltiplos valores (Multi-Value headers):
+    - Por exemplo, vamos usar esta URL para a Lambda: http://catagram.io?&search=roffle&search=winkie
+    - Sem cabeçalhos multi-valor, a Lambda recebe o seguinte:
+        ```
+        "queryStringParameters": {
+            "search": "winkie"
+        }
+        ```
+    - Se os cabeçalhos multi-valor forem habilitados, a Lambda recebe isso:
+        ```
+        "multiValueQueryStringParameters": {
+            "search": ["roffle", "winkie"]
+        }
+        ```
+
+---
+
+# AWS Lambda
+
 - Lambda is a Function-as-a-Service (FaaS) product. We provide specialized short running focused code for Lambda and it will take care running it and billing us for only what we consume
 - Every Lambda function uses a supported runtime, example: Python 3.8, Java 8, NodeJS
 - Every Lambda function is loaded into an executed in a runtime environment

@@ -1,3 +1,31 @@
+# Firewalls de Rede e DNS da AWS (AWS Network and DNS Firewalls)
+
+## AWS Network Firewall
+
+- O AWS Network Firewall é um serviço de firewall de rede, com monitoramento de estado (stateful), gerenciado, e de detecção e prevenção de intrusões (intrusion detection and prevention) para a sua nuvem privada virtual (VPC)
+- É um appliance de rede gerenciado usado para filtrar o tráfego de entrada/saída
+- Numa VPC, ele é implantado em uma sub-rede separada com um Firewall Endpoint (Ponto de Extremidade do Firewall)
+- Possui um mecanismo de regras (rules engine) flexível que fornece controle refinado (fine-grained) sobre o tráfego de rede
+- Os recursos enviam tráfego para a sub-rede do firewall, o firewall redirecionará o tráfego para o gateway (internet gateway, transit gateway, conexão DX, IPSEC VPN)
+- O firewall endpoint usa o gateway load balancer
+- A configuração da tabela de rotas (Route table) é necessária para que a sub-rede protegida consiga enviar tráfego de saída para o gateway load balancer
+- A implantação do Network Firewall pode ser gerenciada com o AWS Organizations e o AWS Firewall Manager
+- Recursos do Network Firewall:
+    - Firewall stateful e stateless
+    - Sistema de Prevenção de Intrusão (Intrusion Prevention System - IPS)
+    - Filtragem da Web (Web filtering)
+- Na sub-rede do firewall não devemos implantar nenhum recurso
+- Para HA (Alta Disponibilidade), devemos alocar uma sub-rede por AZ
+
+## Route 53 Resolver DNS Firewall
+
+- Permite-nos filtrar e regular o tráfego DNS de saída para VPCs
+- As requisições são roteadas pelo Route 53 Resolver para consultas DNS, o DNS Firewall ajudará a evitar a exfiltração de dados via DNS
+- Podemos monitorar e controlar os domínios que a aplicação pode consultar
+- Podemos usar o AWS Firewall Manager para configurar e gerenciar centralmente o DNS Firewall
+
+---
+
 # AWS Network and DNS Firewalls
 
 ## AWS Network Firewall

@@ -1,5 +1,38 @@
 # AWS OpsWorks
 
+- O OpsWorks é um serviço de gerenciamento de configuração que fornece uma implementação gerenciada pela AWS do Chef e do Puppet
+- O OpsWorks funciona num de 3 modos:
+    - Puppet Enterprise: podemos criar um AWS Managed Puppet Master Server (Servidor Mestre Puppet Gerenciado pela AWS - arquitetura de estado desejado)
+    - Chef Automate: podemos criar AWS Managed Chef Servers (Servidores Chef Gerenciados pela AWS - similar ao IaC, conjunto de passos usando Ruby)
+    - OpsWorks: Implementação da AWS do Chef, sem servidores. Chef num nível básico, pouca sobrecarga administrativa (admin overhead)
+- Geralmente, só devemos escolher usá-los se formos obrigados a usar o Chef ou o Puppet, por exemplo, em caso de migração
+- Outro caso de uso seria a exigência de automatizar
+- Se você vir qualquer menção de Recipes (Receitas), Cookbook (Livro de Receitas) ou Manifests (Manifestos), você já sabe que seria qualquer uma das três opções mencionadas acima.
+
+## Modo OpsWorks (Opsworks Mode)
+
+- **Stacks (Pilhas)**: componentes centrais do OpsWorks, contêiner de recursos semelhante às stacks do CFN
+- **Layers (Camadas)**: representam uma função específica numa stack, exemplo: camada de balanceadores de carga, camada de banco de dados, camada de instâncias EC2 rodando uma aplicação web
+- **Recipes (Receitas)** e **Cookbooks (Livros de Receitas)**: eles são aplicados às camadas. Podemos usá-los para instalar pacotes, implantar aplicativos, rodar scripts, realizar reconfigurações. Cookbooks são coleções de receitas que podem ser armazenadas no GitHub
+- **Lifecycle Events (Eventos de Ciclo de Vida)**: eventos especiais que rodam numa camada, exemplos:
+    - Setup (Configuração)
+    - Configure (Configurar): geralmente executado quando instâncias são removidas ou adicionadas à stack. Rodará em todas as instâncias, incluindo as já existentes
+    - Deploy (Implantar)
+    - Undeploy (Desimplantar)
+    - Shutdown (Desligar)
+- **Instances (Instâncias)**: instâncias de computação (instâncias EC2 ou servidores on-premises). Elas podem ser:
+    - Instâncias **24/7**: iniciadas manualmente
+    - Instâncias **Baseadas em Tempo (Time-Based)**: configuradas para iniciar e parar num cronograma
+    - Instâncias **Baseadas em Carga (Load-Based)**: ligam ou desligam com base nas métricas do sistema (semelhante ao ASG)
+- **Cura automática (auto-healing)** da instância: o OpsWorks reinicia automaticamente as instâncias se elas falharem por algum motivo
+- **Apps (Aplicativos)**: eles podem ser armazenados em repositórios como o S3. Cada aplicativo é representado por um OpsWorks App, que especifica o tipo de aplicativo e contém quaisquer informações necessárias para implantar o aplicativo dos repositórios para as instâncias.
+- Arquitetura OpsWorks:
+    ![OpsWorks architecture](images/AWSOpsWorks.png)
+
+---
+
+# AWS OpsWorks
+
 - OpsWorks is configuration managed service which provides AWS managed implementation of Chef a Puppet
 - OpsWorks functions in one of 3 modes:
     - Puppet Enterprise: we can create an AWS Managed Puppet Master Server (desired state architecture)

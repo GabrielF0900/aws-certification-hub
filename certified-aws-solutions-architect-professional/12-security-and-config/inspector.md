@@ -1,5 +1,31 @@
 # AWS Inspector
 
+- É um produto projetado para verificar instâncias EC2 e os sistemas operacionais (OS) rodando nessas instâncias, bem como fluxos de trabalho de contêiner (container workflows), em busca de quaisquer vulnerabilidades ou desvios das melhores práticas
+- O Inspector pode ser executado por um determinado período de tempo (15 min, 1 hora, 1 dia, etc.) para identificar qualquer tráfego e configurações incomuns que possam colocar as instâncias em risco
+- No final deste processo, o Inspector fornece um relatório de descobertas (findings) ordenado por gravidade
+- O Inspector pode trabalhar com 2 tipos principais de avaliações (assessments):
+    - Avaliação de Rede (Network Assessment): pode ser conduzida sem agente (agentless), mas adicionar um agente pode fornecer uma avaliação mais rica
+    - Avaliação de Rede e Host (Network and Host Assessment): requer a instalação de um agente. A avaliação do host procura vulnerabilidades no nível do sistema operacional, portanto, exige a presença de um agente
+- Pacotes de regras (Rules packages): determinam o que é verificado numa instância
+- Exemplos de pacotes de regras:
+    - **Acessibilidade de Rede (Network Reachability)**:
+        - Pode ser feito sem agente ou com um agente fornecendo visibilidade do sistema operacional
+        - Verifica a acessibilidade de ponta a ponta (end to end)
+        - Retorna os seguintes achados (findings):
+            - `RecognizedPortWithListener` (Porta Reconhecida Com Ouvinte)
+            - `RecognizedPortNoListener` (Porta Reconhecida Sem Ouvinte)
+            - `RecognizedPortNoAgent` (Porta Reconhecida Sem Agente)
+            - `UnrecognizedPortWithListener` (Porta Não Reconhecida Com Ouvinte)
+    - **Avaliação de Host (Host Assessment)**:
+        - O Agente é obrigatório
+        - Verifica vulnerabilidades e exposições comuns (CVE - Common vulnerabilities and exposures)
+        - Benchmarks do Center for Internet Security (CIS)
+        - Melhores práticas de segurança para o Amazon Inspector
+
+---
+
+# AWS Inspector
+
 - Is a product designed to check EC2 instances and the operating systems running on those instances, as well as container workflows, for any vulnerabilities or deviations against best practice
 - Inspector can be run for a certain period of time (15 min, 1 hour, 1 day, etc.) to identify any unusual traffic and configurations which can put instances to risk
 - At the end of this process, Inspector provides a report of findings ordered by severity

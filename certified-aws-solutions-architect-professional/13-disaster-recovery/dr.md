@@ -1,3 +1,117 @@
+# Arquitetura de DR/BC (Recuperação de Desastres / Continuidade de Negócios)
+
+- DR/BC eficaz custa dinheiro o tempo todo
+- Precisamos de algum tipo de recursos extras que aumentarão os custos
+- Executar o processo de recuperação de desastres/continuidade de negócios leva tempo. O tempo que leva depende do tipo de DR/BC em uso
+- DR/BC é um trade-off (compromisso) entre tempo e custos
+
+## Tipos de Recuperação de Desastres
+
+- **Backup e Restauração (Backup and Restore)**:
+    - O backup dos dados é feito constantemente no site principal
+    - Os únicos custos são a mídia de backup e o gerenciamento, sem custos contínuos de infraestrutura de espaço
+    - Tem pouco ou nenhum custo inicial (upfront), mas implica um tempo significativo para recuperação
+    - O tempo de recuperação esperado é contado em horas
+- **Luz Piloto (Pilot Light)**:
+    - O site principal está rodando a todo vapor
+    - Luz Piloto implica executar um ambiente secundário tendo apenas o mínimo absoluto de serviços rodando
+    - No caso de um desastre, os serviços desligados podem ser iniciados (spined up); não são esperados custos caso não haja necessidade de DR
+    - O tempo de recuperação esperado é de algumas dezenas de minutos
+- **Warm Standby (Espera Quente)**:
+    - O site principal está rodando a todo vapor, tudo é replicado no site de backup em menor escala
+    - Pronto para ter o tamanho aumentado quando o failover for necessário
+    - É mais rápido que a abordagem de luz piloto e mais barato que a abordagem ativo/ativo
+    - O tempo de recuperação esperado é de alguns minutos
+- **Ativo/Ativo (Multi-site):**
+    - O site principal é totalmente replicado num site secundário
+    - Os dados são constantemente replicados do site principal para o backup
+    - Os custos são geralmente de 200%
+    - Não existe conceito de tempo de recuperação
+    - Benefícios adicionais:
+        - Balanceamento de carga em todos os ambientes
+        - Melhoria de HA (Alta Disponibilidade) e performance
+- Resumo:
+    - Backups: baratos e lentos
+    - Pilot Light: razoavelmente barato, mas mais rápido
+    - Warm Standby: custoso, mas rápido para recuperar
+    - Active/Active: caro, tempo de recuperação 0
+
+## Arquitetura DR - Armazenamento (Storage)
+
+- Volumes Instance Store:
+    - Forma de armazenamento de maior risco disponível
+    - Se o host falhar, os volumes do instance store também falharão
+    - Devem ser vistos como armazenamento temporário e não confiável
+- EBS:
+    - Volumes são criados e rodam em uma única AZ (falha da AZ significa falha nos volumes EBS)
+    - Snapshots do EBS são armazenados no S3, o que aumentará a confiabilidade
+- S3:
+    - Os dados são replicados em várias AZs
+    - One-Zone: não é regionalmente resiliente
+- EFS:
+    - Sistemas de arquivos EFS são replicados em várias AZs
+    - Eles são, por padrão, regionalmente resilientes - a falha numa região significa a falha nos volumes EFS
+- Arquitetura DR - Armazenamento:
+    ![DR Architecture - Storage](images/DRArchitectureStorage.png)
+
+## Arquitetura DR - Computação (Compute)
+
+- EC2:
+    - Se o host falhar, as instâncias EC2 falham também
+    - Uma instância EC2 por si só não é resiliente de forma alguma
+    - Se a falha for limitada a um host, a instância pode ser movida para outro host na AZ. O volume EBS pode ser apresentado (anexado) à nova instância
+    - Auto Scaling Group: pode ser colocado em várias AZs; se a instância falhar numa AZ, a função do ASG é recriá-la em outra
+- ECS:
+    - Pode rodar em 2 modos: EC2 e Fargate
+    - Modo EC2: a arquitetura DR é semelhante à acima
+    - Modo Fargate: contêineres rodam em um host de cluster gerenciado pela AWS sendo injetados em VPCs
+    - O Fargate pode fornecer HA automática rodando as coisas em AZs diferentes
+- Lambda:
+    - Por padrão roda no modo público (public mode)
+    - No modo VPC (privado), as funções Lambda são injetadas nas VPCs. Se uma AZ falhar, a Lambda pode ser automaticamente injetada em outra sub-rede em uma AZ diferente
+    - Seria necessária a falha de uma região inteira para que o Lambda fosse impactado
+- Arquitetura DR - Computação:
+    ![DR Architecture - Compute](images/DRArchitectureCompute.png)
+
+## Arquitetura DR - Bancos de Dados (Databases)
+
+- Executar bancos de dados no EC2 deve ser feito apenas em certos casos!
+- DynamoDB:
+    - Os dados são replicados entre vários nós (nodes) em diferentes AZs
+    - A falha só pode ocorrer se a região inteira falhar
+- RDS:
+    - Requer a criação de um grupo de sub-redes (subnet group) que especifica qual sub-rede pode ser usada numa VPC para um Banco de Dados
+    - O RDS normal (não Aurora) envolve uma única instância ou instância primária e standby rodando em AZs diferentes
+    - Os dados são armazenados no armazenamento local para cada instância, os dados são replicados de forma assíncrona para a standby
+    - Se a instância primária falhar, o fallback (failover) automático é feito para a standby
+    - No caso do Aurora, podemos ter uma ou mais réplicas em cada AZ
+    - O Aurora usa uma arquitetura de armazenamento em cluster; o armazenamento é compartilhado entre as instâncias de BD em execução
+    - O Aurora pode resistir a falhas de até a falha de uma região inteira (sem usar o Aurora Global)
+- Bancos de Dados Globais (Global Databases):
+    - DynamoDB Global Table (Tabela Global): replicação multi-master (multimestre) entre réplicas regionais.
+    - Aurora Global Databases: cluster de leitura-gravação (read-write) numa região, cluster de leitura secundário em outras regiões. A replicação acontece na camada de armazenamento, nenhuma carga extra (load) é colocada no BD
+    - Cross Region Read Replicas for RDS (Réplicas de Leitura Inter-Regiões para RDS): replicação assíncrona, mas não feita na camada de armazenamento
+- Arquitetura DR - Bancos de Dados:
+    ![DR Architecture - Databases](images/DRArchitectureDatabases.png)
+
+## Arquitetura DR - Rede (Networking)
+
+- Rede em nível local:
+    - VPCs são regionalmente resilientes
+    - Certos objetos de gateway como VPC Router e IGW também são regionalmente resilientes
+    - As sub-redes (Subnets) estão vinculadas à AZ em que estão localizadas; se a AZ falhar, a sub-rede falha também
+    - LB (Load Balancers): serviços regionais, nós são implantados em cada AZ que selecionarmos
+    - Usando um LB podemos rotear o tráfego para as AZs que estão saudáveis
+- Interface endpoint (Ponto de extremidade de interface):
+    - Estão vinculados a uma AZ
+    - Múltiplos interface endpoints podem ser implantados em diferentes AZs
+- Arquitetura DR - Rede:
+    ![DR Architecture - Networking](images/DRArchitectureNetworking.png)
+- Redes Globais (Global Networking):
+    - O Route53 pode rotear globalmente para regiões diferentes (roteamento de failover - failover routing)
+
+---
+
 # DR/BC Architecture
 
 - Effective DR/BC costs money all of the time

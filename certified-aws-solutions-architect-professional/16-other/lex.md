@@ -1,3 +1,32 @@
+# Amazon Lex e Amazon Connect
+
+## Amazon Lex
+
+- Fornece interfaces de conversação (conversational interfaces) por texto ou voz (Lex para voz, Lex para Alexa)
+- Alimenta o serviço Alexa
+- O Lex fornece 2 principais partes de funcionalidade:
+    - Reconhecimento automático de fala (ASR - Automatic speech recognition) - fala em texto
+    - Compreensão de Linguagem Natural (NLU - Natural Language Understanding) - intenção (intent)
+- O Lex nos permite incorporar a compreensão de voz e texto aos nossos aplicativos
+- Escala bem, integra-se com outros serviços da AWS, é rápido de implantar e tem um modelo de precificação de pagamento conforme o uso (pay as you go)
+- Casos de uso:
+    - Chatbots
+    - Assistentes de Voz
+    - Bots de Perguntas e Respostas (Q&A Bots)
+    - Bots de Informação/Empresariais (Info/Enterprise Bots)
+
+## Amazon Connect
+
+- É um contact center (central de atendimento) como serviço
+- Não requer infraestrutura on-premises (local)
+- É omnichannel (omnicanal): voz e chat, entrada (incoming) e saída (outgoing)
+- Integra-se com redes PSTN para voz tradicional, permitindo-nos aceitar chamadas recebidas e fazer chamadas de saída usando as redes de telefonia celular tradicionais
+- Os agentes podem se conectar usando a internet de qualquer lugar
+- O AWS Connect pode se integrar com outros serviços, como Lambda/Lex, para inteligência e recursos adicionais
+- É rápido de provisionar, fornece precificação pay as you go. É escalável
+
+---
+
 # Amazon Lex and Amazon Connect
 
 ## Amazon Lex

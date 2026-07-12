@@ -1,3 +1,16 @@
+# CloudWatch Events e EventBridge
+
+- Fornecem um fluxo de eventos do sistema quase em tempo real
+- Esses eventos descrevem alterações nos serviços da AWS, por exemplo: instância EC2 é iniciada
+- O EventBridge é um sistema mais recente que substitui o CloudWatch Events. Ele pode executar a mesma funcionalidade e, além disso, pode lidar com eventos de terceiros e aplicativos personalizados
+- Ambos os serviços operam usando um barramento de eventos (event bus). Ambos têm um barramento de eventos padrão
+- No CloudWatch Events, há apenas o barramento de eventos padrão, que é explícito e não é exposto à interface do usuário (UI)
+- No EventBridge, podemos ter barramentos de eventos adicionais
+- Em ambos os sistemas criamos regras que correspondem aos eventos de entrada, ou temos regras baseadas em agendamento
+- Os próprios eventos são objetos JSON, incluindo, por exemplo, qual instância EC2 mudou de estado, para qual estado mudou, bem como outras coisas como data e hora
+
+---
+
 # CloudWatch Events and EventBridge
 
 - Deliver a near real-time stream of system events

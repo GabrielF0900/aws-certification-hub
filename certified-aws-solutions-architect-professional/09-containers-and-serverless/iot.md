@@ -1,5 +1,64 @@
 # AWS IoT
 
+- IoT - Internet of Things (Internet das Coisas)
+
+## AWS IoT Core
+
+- AWS IoT Core é um conjunto de produtos na AWS, usado para gerenciar milhões de dispositivos IoT
+- Dispositivos IoT podem ser sensores de temperatura, vento, água, sensores de luz, sensores de controle de válvulas, etc.
+- Todos estes precisam ser registrados em um sistema para permitir comunicação segura para gerenciá-los: provisionamento, atualizações e controle
+- A comunicação de ou para dispositivos provavelmente não será confiável (unreliable), então a AWS fornece as *device shadows* (sombras de dispositivos): representações virtuais de dispositivos reais, tendo a mesma configuração registrada do dispositivo real. Podemos ler delas os últimos dados comunicados, essencialmente o dispositivo se comunica com a shadow, os últimos dados registrados podem ser recuperados a qualquer momento depois
+- Mensagens de dispositivos são enviadas no formato JSON, usando protocolos MQTT
+- AWS IoT fornece regras (rules): integração orientada a eventos com outros serviços da AWS
+- Arquitetura AWS IoT:
+    [AWS IoT architecture](images/ElasticTranscoder&AWSIoT.png)
+
+## AWS IoT Device Management
+
+- Ajuda-nos a registrar, organizar, monitorar e gerenciar remotamente dispositivos IoT em escala
+
+## AWS IoT Device Defender
+
+- Usado para auditar configurações, autenticar dispositivos, detectar anomalias e receber alertas para nos ajudar a proteger nossa frota de dispositivos IoT
+
+## AWS IoT 1-Click
+
+- Usado para lançar funções AWS Lambda a partir de dispositivos IoT
+- Também podemos criar ações na nuvem ou no local (on-premises)
+
+## AWS Greengrass
+
+- AWS Greengrass é uma extensão dos serviços fornecidos pelo AWS IoT, movendo esses serviços para mais perto da borda (edge)
+- O Greengrass permite que alguns serviços como computação, mensagens, gerenciamento de dados, sincronização e recursos de ML sejam executados a partir de dispositivos de borda
+- Dispositivos com o software Greengrass Core podem executar localmente funções Lambda ou contêineres => a computação pode rodar localmente sem sair da rede local
+- O Greengrass fornece *device shadows* locais que são sincronizadas de volta com a AWS
+- Permite mensagens usando MQTT
+- Permite acesso local ao hardware para funções Lambda
+
+## AWS IoT Analytics
+
+- Usado para executar análises (analytics) em dados de IoT e obter insights para tomar decisões melhores e mais precisas
+- Suporta até petabytes de dados de milhões de dispositivos
+
+## AWS IoT Events
+
+- Usado para detectar e responder a eventos de sensores e aplicativos IoT
+- Podemos ingerir dados de várias fontes para detectar o estado de nossos processos ou dispositivos e gerenciar proativamente cronogramas de manutenção
+
+## AWS IoT SiteWise
+
+- Simplifica a coleta, organização e análise de dados de equipamentos industriais
+- Podemos organizar fluxos de dados de sensores de várias linhas de produção e instalações para impulsionar a eficiência em diferentes locais
+
+## AWS IoT TwinMaker (anteriormente AWS IoT Things Graph)
+
+- Usado para criar gêmeos digitais (digital twins) de sistemas do mundo real, como edifícios, fábricas, equipamentos industriais e linhas de produção
+- Usamos isso para identificar e resolver rapidamente anomalias de equipamentos e processos no chão de fábrica, visando melhorar a produtividade e a eficiência do trabalhador
+
+---
+
+# AWS IoT
+
 - IoT - Internet of Things
 
 ## AWS IoT Core

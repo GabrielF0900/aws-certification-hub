@@ -1,3 +1,39 @@
+# VPC Flow Logs (Logs de Fluxo da VPC)
+
+- Ferramentas de diagnóstico essenciais para redes complexas
+- Eles capturam apenas os metadados do pacote, não capturam o conteúdo do pacote. Para o conteúdo do pacote, é necessário instalar um analisador de pacotes (packet sniffer) numa instância
+- Os metadados podem incluir: IP de origem/destino, portas de origem/destino, tamanho do pacote, outros metadados visíveis externamente, etc.
+- Os Flow Logs podem capturar dados em vários pontos diferentes:
+    - Aplicado a uma VPC: todas as interfaces naquela VPC
+    - Sub-rede: apenas em cada interface de rede da sub-rede
+    - Interface de rede: monitora o tráfego apenas em uma interface específica
+- Os VPC Flow Logs NÃO são em tempo real, há um atraso entre o tráfego que sai das interfaces monitoradas e seu aparecimento nos flow logs <span style="color: red;">EXAME</span>
+- Flow logs podem ser configurados para usar o S3, CloudWatch Logs ou Kinesis Firehose como destino
+- Flow logs podem ser configurados para capturar dados apenas em conexões aceitas, apenas em conexões rejeitadas ou podem capturar metadados de todas as conexões.
+
+## Conteúdo do Registro do VPC Flow Logs
+
+- `<version>`
+- `<account-id>`
+- `<interface-id>`
+- `<srcaddr>`: endereço IP de origem
+- `<dstaddr>`: endereço IP de destino
+- `<srcport>`: porta de origem, 0 se nenhuma porta for usada (exemplo: no caso de ping ICMP)
+- `<dscport>`: porta de destino
+- `<protocol>`: ICMP=`1`, TPC=`6`, UDP=`17`, etc. <span style="color: red;">Precisa lembrar para o EXAME</span>
+- `<packets>`
+- `<bytes>`
+- `<start>`
+- `<end>`
+- `<action>`: o tráfego é `ACCEPT`ed (aceito) ou `REJECT`ed (rejeitado)
+- `<log-status>`
+
+## Notas
+
+- VPC Flow Logs não registram todo o tráfego; coisas como comunicação com o IP de metadados (169.254.169.254), servidor de sincronização de horário da AWS (AWS time sync server - 169.254.169.123), DHCP, servidor DNS da Amazon e licença do Amazon Windows não são gravadas
+
+---
+
 # VPC Flow Logs
 
 - Essential diagnostic tools for complex networks

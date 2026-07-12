@@ -1,5 +1,57 @@
 # ECS - Elastic Container Service
 
+- É um serviço que aceita contêineres e orquestra onde e como executá-los
+- É um serviço de computação baseado em contêiner gerenciado
+- Ele é executado em dois modos: EC2 e Fargate
+- Cluster: é o local onde os contêineres são executados com base em como queremos que eles sejam executados
+- Os contêineres estão localizados em registros de contêineres (ECR, DockerHub)
+- O ECS usa **definições de contêiner (container definitions)** para localizar imagens nos registros de contêineres, qual porta a imagem deve usar, etc., fornecendo informações sobre o contêiner que queremos executar
+- **Definição de tarefa (Task definition)**: representa um aplicativo independente, pode ter um ou vários contêineres definidos nela. Uma tarefa no ECS define o aplicativo como um todo
+- As definições de tarefas armazenam os recursos a serem usados (CPU, memória), configuração de rede, compatibilidade (modo EC2 ou Fargate) e também armazenam a função da tarefa (função IAM ou IAM role)
+- **Função da tarefa (Task role)** é a função IAM que a tarefa pode assumir. Ela dá permissão aos contêineres ECS para acessar serviços da AWS
+- **Função de Execução de Tarefa (Task Execution Role)**: para configurar o próprio contêiner e mantê-lo, algumas tarefas são executadas. O Agente de Contêiner (Container Agent) executa essas tarefas para o contêiner. Portanto, a função exigida e assumida pelo Agente de Contêiner para configurar o contêiner é a Função de Execução de Tarefa
+- Uma tarefa não é dimensionada sozinha (doesn't scale by its own) e não é HA (Altamente Disponível)
+- **Serviço ECS (ECS service)**: é configurado por uma **definição de serviço (service definition)**. Em um serviço, definimos como queremos que uma tarefa seja dimensionada, quantas cópias gostaríamos de executar
+- Os serviços ECS definem a escalabilidade e HA para tarefas
+
+## Modos de Cluster ECS
+
+- O modo de cluster define quanto da sobrecarga administrativa é necessária para executar contêineres no ECS (quais partes gerenciamos e quais partes a AWS gerencia)
+- Os modos de cluster são:
+    - Modo EC2
+    - Modo Fargate
+
+### Modo EC2
+
+- Usa instâncias EC2 que estão em execução dentro de uma VPC
+- Como estamos dentro de uma VPC, podemos nos beneficiar do uso de várias zonas de disponibilidade (AZs)
+- Quando criamos o cluster, especificamos o tamanho inicial dos contêineres
+- O escalonamento horizontal para instâncias EC2 e para tarefas ECS é controlado por ASGs (Auto Scaling Groups)
+- Com o modo de cluster EC2, pagamos por instâncias EC2 independentemente de quais contêineres e quantos contêineres estão sendo executados nelas
+
+### Modo Fargate
+
+- Não precisamos gerenciar instâncias EC2 para usar como host de contêiner
+- Com o Fargate não há servidores para gerenciar
+- A AWS mantém uma plataforma de infraestrutura Fargate compartilhada oferecida a todos os usuários
+- Temos acesso a recursos de um pool compartilhado, não temos visibilidade de outros clientes
+- Uma implantação do Fargate ainda usa um cluster com uma VPC que opera em AZs
+- As tarefas do ECS são injetadas na VPC com uma ENI e são executadas na plataforma compartilhada do Fargate
+- Com o modo Fargate, pagamos apenas pelos contêineres que estamos usando com base nos recursos que eles consomem
+
+## EC2 vs ECS (EC2) vs Fargate
+
+- Se já estamos usando contêineres, devemos usar o ECS
+- Os contêineres fazem sentido se quisermos isolar aplicativos
+- Geralmente escolhemos o modo EC2 se tivermos uma grande carga de trabalho e o negócio for sensível a preços
+- Historicamente, o modo EC2 oferecia mais valor pelo preço se usássemos saving plans (planos de economia). Hoje em dia, podemos ter saving plans para Fargate e Lambda, então devemos usar o Fargate como padrão em vez do modo EC2
+- Se estivermos preocupados com a sobrecarga de gerenciamento (overhead conscious), devemos usar o Fargate
+- Para cargas de trabalho pequenas/com picos (burst), também devemos usar o Fargate. O mesmo é recomendado para cargas de trabalho em lote (batch) / periódicas
+
+---
+
+# ECS - Elastic Container Service
+
 - It is a service that accepts containers and orchestrates where and how to run those containers
 - It is a managed container based compute service
 - It runs on two modes: EC2 and Fargate

@@ -1,5 +1,22 @@
 # Amazon Translate
 
+- É um serviço de tradução de texto baseado em ML (Machine Learning)
+- Traduz o texto do idioma nativo para outros idiomas uma palavra de cada vez
+- O processo de tradução tem duas partes:
+    - O Codificador (Encoder) lê o texto fonte => produz uma representação semântica (significado)
+    - O Decodificador (Decoder) lê o significado => escreve para o idioma de destino (target language)
+- O mecanismo de atenção (Attention mechanism) garante que o "significado" seja traduzido
+- O Textract é capaz de detectar o idioma do texto de origem (source text language)
+- Casos de uso:
+    - Experiência do usuário multilíngue (Multilingual user experience)
+    - Traduzir dados de entrada (mídias sociais/notícias/comunicações)
+    - Independência de idioma para outros serviços da AWS: podemos ter outros serviços como Comprehend, Transcribe e Polly que operam em informações; o Transcribe fará com que esses serviços operem de forma independente do idioma. Pode ser usado para analisar dados armazenados no S3, RDS, DDB, etc.
+    - Comumente usado para integração com outros serviços/Apps/plataformas
+
+---
+
+# Amazon Translate
+
 - Is a text translation service based in ML
 - Translates text from native language to other languages one word at a time
 - Translation process has two parts:

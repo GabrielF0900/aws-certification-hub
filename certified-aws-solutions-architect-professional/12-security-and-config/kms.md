@@ -1,3 +1,87 @@
+# Criptografia e KMS
+
+## Abordagens de Criptografia
+
+- **Criptografia em Repouso (Encryption At Rest)**: projetada para proteger contra ameaças físicas ou adulterações (tempering)
+    - Os dados são armazenados em hardware compartilhado de forma criptografada; mesmo que alguém tenha acesso ao hardware, não poderá acessar os dados num formato legível
+    - Geralmente usado quando uma parte está envolvida
+- **Criptografia em Trânsito (Encryption In Transit)**: visa proteger os dados quando transferidos entre 2 lugares
+    - Geralmente usado quando vários indivíduos/sistemas estão envolvidos
+
+## Conceitos de Criptografia
+
+- Texto simples (Plaintext): dados não criptografados, podem ser texto, imagem, outro aplicativo, etc.
+- Algoritmo: pedaço de código que recebe texto simples e uma chave (key) e gera dados criptografados. Exemplos de algoritmos: Blowfish, AES, RC4, DES, RC5 e RC6
+- Chave (Key): é uma senha
+- Texto cifrado (Ciphertext): quando um algoritmo recebe o texto simples e a chave, a saída gerada é o cyphertext (dados criptografados)
+
+## Criptografia Simétrica
+
+- Chaves Simétricas (Symmetric Keys): a mesma chave pode ser usada tanto para criptografia quanto para descriptografia
+- Algoritmos de criptografia simétrica: AES-256
+- Ótima para criptografia em repouso, não recomendada para criptografia em trânsito
+
+## Criptografia Assimétrica
+
+- Torna muito mais fácil a troca de chaves
+- Algoritmos assimétricos: RSA, ElGamal
+- Chaves Assimétricas (Asymmetric Keys): são formadas por 2 partes: chave pública (public key) e chave privada (private key)
+- Uma chave pública pode ser usada para gerar um texto cifrado que só pode ser descriptografado pela chave privada
+- A criptografia assimétrica é usada pelo PGP, SSL, SSH, etc.
+
+## Assinatura (Signing)
+
+- Processo usado para provar a identidade de uma mensagem
+- Uma mensagem pode ser assinada com uma chave privada e verificada usando a chave pública
+
+## Esteganografia (Steganography)
+
+- Um processo para ocultar dados criptografados em dados de texto simples
+
+## KMS - Key Management Service (Serviço de Gerenciamento de Chaves)
+
+- É um serviço regional e público
+- Permite-nos criar, armazenar e gerenciar chaves criptográficas
+- Pode lidar com chaves simétricas e assimétricas
+- Pode realizar operações criptográficas, como criptografia e descriptografia
+- **As chaves nunca saem do KMS!** Chaves podem ser criadas ou importadas, mas ficam trancadas dentro do KMS
+- O KMS também fornece conformidade FIPS 140-2 (L2) <span style="background-color: Red"><-- LEMBRE-SE DISSO</span>
+
+### Chaves KMS (Anteriormente conhecidas principalmente como CMK - Customer Master Keys / Chaves Mestras do Cliente)
+
+- As principais coisas gerenciadas pelo KMS são as chaves do KMS
+- Elas são usadas pelo KMS em operações criptográficas
+- Elas são lógicas e contêm as seguintes coisas: ID, data, política, descrição e estado
+- Cada chave KMS é apoiada por material de chave física (physical key material). O material de chave física pode ser gerado pelo KMS ou importado pelo KMS
+- As chaves KMS podem ser usadas para criptografar ou descriptografar dados diretamente para até 4KB de dados
+
+### DEK - Data Encryption Keys (Chaves de Criptografia de Dados)
+
+- As Chaves de Criptografia de Dados (DEKs) são geradas a partir das chaves KMS usando a API `GenerateDataKey`
+- Essas chaves podem ser usadas para criptografar/descriptografar dados localmente com tamanho superior a 4KB
+- A DEK gerada está vinculada a uma chave KMS específica
+- O KMS não armazena a DEK de forma alguma; ela é gerada, fornecida ao usuário e descartada depois
+- O KMS fornece 2 versões da chave: uma em texto simples e um texto cifrado criptografado com a CMK
+- Espera-se que descartemos a chave de texto simples (plaintext key) assim que criptografarmos os dados
+- Os dados criptografados e a chave de criptografia de dados criptografada devem ser armazenados lado a lado
+- Para descriptografar os dados, passamos a DEK criptografada de volta ao KMS para ser descriptografada e, com a chave descriptografada, descriptografamos os dados em si
+
+### Conceitos Chave
+
+- As chaves KMS são isoladas numa região e nunca saem do KMS (por padrão)
+- O KMS também suporta chaves multirregião, em que as chaves são replicadas para outras regiões
+- Existem 2 tipos de chaves: de propriedade da AWS (AWS owned) e de propriedade do cliente (customer owned). No caso de chaves de propriedade do cliente, podemos ter chaves gerenciadas pela AWS (criadas automaticamente) ou chaves gerenciadas pelo cliente (criadas explicitamente pelo cliente)
+- As chaves gerenciadas pelo cliente são mais configuráveis. Por exemplo, podemos editar a política de chave para permitir acesso entre contas (cross account) à chave
+- As chaves KMS suportam rotação. A rotação é opcional para chaves gerenciadas pelo cliente
+- Uma chave KMS contém a chave de apoio (backing key), o material de chave física e todas as chaves de apoio anteriores causadas pela rotação => dados criptografados com chaves anteriores ainda podem ser descriptografados
+- Podemos criar aliases para as chaves KMS. Os aliases são por região
+- Políticas de chaves e segurança:
+    - Políticas de Chave (Recurso): elas são diferentes em comparação com as políticas que outros serviços da AWS têm, pois cada política de chaves do KMS deve permitir explicitamente o acesso da conta AWS proprietária
+    - Cada chave KMS tem uma política de chave
+    - As chaves KMS são muito granulares
+
+---
+
 # Encryption and KMS
 
 ## Encryption Approaches

@@ -1,5 +1,241 @@
 # CloudFront
 
+- É uma rede de entrega de conteúdo (Content Delivery Network - CDN)
+- Seu trabalho é melhorar a entrega de conteúdo desde o seu local original (origem) até os visualizadores (viewers) do conteúdo
+- Consegue isso através do uso de cache e de uma rede global eficiente
+
+## Termos e Arquitetura do CloudFront
+
+- **Origem (Origin)**: o local de origem do conteúdo, pode ser o S3 ou origem personalizada (endereço IPv4 roteável publicamente)
+- **Distribuição (Distribution)**: unidade de configuração dentro do CloudFront, que é implantada na rede do CloudFront. Quase tudo é configurado dentro da distribuição de forma direta ou indireta
+- **Local de Borda (Edge Location)**: partes da infraestrutura global onde o conteúdo é armazenado em cache. Eles são menores do que as regiões da AWS. Estão presentes em um número muito maior do que os locais da AWS e são mais amplamente distribuídos. Podem ser usados para distribuir apenas dados estáticos
+- **Cache de Borda Regional (Regional Edge Cache)**: versão maior de um edge location, mas em menor quantidade. Fornece outra camada de cache
+- Arquitetura do CloudFront:
+    ![CloudFront Architecture](images/CloudFrontArchitecture1.png)
+- Se usarmos origens do S3, o cache de borda regional não será usado caso ocorra uma falha de cache (cache miss) no edge location. Apenas origens personalizadas (custom origins) podem usar o cache de borda regional!
+- **Busca na Origem (Origin fetch)**: o conteúdo é buscado na origem em caso de falha de cache no edge location
+- **Comportamento (Behavior)**: é a configuração dentro de uma distribuição. As origens estão diretamente vinculadas aos comportamentos, e os comportamentos estão vinculados às distribuições
+    ![CloudFront Behavior](images/CloudFrontArchitecture2.png)
+
+## Comportamentos (Behaviors) do CloudFront
+
+- Distribuições são unidades de configuração no CF; muitas opções de alto nível são configuradas no nível da distribuição:
+    - Classe de preço (Price class)
+    - Anexação de Web Application Firewall
+    - Nomes de domínio alternativos (Alternate domain names)
+    - Tipo de certificado SSL
+    - Configuração SNI
+    - Política de segurança
+    - Versões HTTP suportadas
+    - etc.
+- Uma única distribuição pode ter um comportamento padrão (default behavior) ou vários comportamentos
+- Qualquer requisição recebida é combinada com o padrão do comportamento
+- O comportamento padrão tem um padrão curinga (`*`) e corresponderá a qualquer coisa que não tenha sido combinada com outro comportamento mais específico
+- Quando uma requisição corresponde ao padrão de um comportamento, ela fica sujeita às configurações desse comportamento, que podem ser as seguintes:
+    - Origem ou grupo de origens
+    - Política de protocolo do visualizador (Viewer protocol policy - redirecionar HTTP para HTTPS)
+    - Métodos HTTP permitidos
+    - Criptografia em nível de campo (Field level encryption)
+    - Diretivas de cache - podemos usar:
+        - Configurações de cache herdadas (Legacy cache settings)
+        - Política de cache e política de requisição de origem (recomendado pela AWS)
+    - TTL (mínimo, máximo, padrão)
+    - Restringir o acesso do visualizador a um comportamento: define todo o comportamento como restrito ou privado. Se selecionarmos isso, precisaremos especificar o tipo de autorização confiável (trusted authorization), que pode ser:
+        - Grupos de chaves confiáveis (Trusted key groups - recomendado pela AWS)
+        - Assinante confiável (Trusted signer - legado)
+    - Compactar objetos automaticamente
+    - Associar função Lambda@Edge
+
+## TTL e Invalidações
+
+![TTL and Invalidations](images/CloudFrontTTL.png)
+- Um edge location vê um objeto como não expirado quando ele está dentro do seu período TTL
+- Maior frequência de acertos de cache (cache hits) = menores cargas na origem
+- O período de validade padrão de um objeto (TTL) é de 24 horas. Isso é definido no comportamento
+- TTL Mínimo, TTL máximo: define os valores mínimo ou máximo que o TTL de um objeto individual pode ter
+- Valores de TTL específicos do objeto podem ser definidos pelas origens usando cabeçalhos (headers) diferentes:
+    - Cache-Control `max-age` (segundos): valor de TTL em segundos para um objeto
+    - Cache-Control `s-maxage` (segundos): mesmo que `max-age`
+    - Expires (Data e Hora): data e hora de expiração
+- Para todos esses cabeçalhos, se eles especificarem um valor fora do intervalo mínimo e máximo, o valor mín/máx será usado
+- Cabeçalhos personalizados para origens do S3 podem ser configurados nos metadados do objeto
+- Invalidações de cache são executadas numa distribuição e aplicam-se a todos os edge locations (isso leva tempo)
+- A invalidação do cache invalida todos os objetos, independentemente do valor de TTL, com base no padrão de invalidação
+- Há um custo associado quando a invalidação é aplicada. Esse custo é o mesmo, independentemente do número de arquivos que invalidamos
+- Em vez de invalidação, podemos considerar usar **nomes de arquivo versionados**
+- Nomes de arquivo versionados também ajudam a:
+    - Evitar o uso de cache local do navegador no caso de um arquivo mais novo
+    - Melhorar o registro (logging)
+    - Reduzir custos, pois não há necessidade de invalidação manual
+- O versionamento de objetos do S3 e os nomes de arquivo versionados não devem ser confundidos!
+
+## CloudFront e SSL
+
+- Cada distribuição CF recebe um nome de domínio padrão (CNAME)
+- O HTTPS pode ser habilitado por padrão para este endereço
+- O CF permite nomes de domínio alternativos (CNAME)
+- Processo de adição de nomes de domínio alternativos:
+    - Se usarmos HTTPS, precisamos de um certificado aplicado à distribuição que corresponda a esse nome
+    - Mesmo que não queiramos usar o HTTPS, precisamos de uma maneira de verificar se possuímos e controlamos o domínio. Isso é conseguido adicionando um certificado SSL que corresponda ao nome que estamos adicionando à distribuição CF
+    - O resultado é que precisamos adicionar um certificado SSL quer usemos HTTPS ou não
+- Certificados SSL são importados usando o ACM (AWS Certificate Manager)
+- O ACM é um serviço regional; por causa disso, o certificado para serviços globais (como o CF) precisa ser importado na região *us-east-1*
+- Opções que podemos definir num comportamento CF para lidar com HTTP e HTTPS:
+    - Podemos permitir HTTP e HTTPS em uma distribuição
+    - Podemos redirecionar HTTP para HTTPS
+    - Podemos restringir para permitir apenas HTTPS (qualquer HTTP falhará)
+- Existem dois conjuntos de conexões quando qualquer indivíduo está usando o CF:
+    - Viewer (Visualizador) => CF (protocolo do viewer)
+    - CF => Origin (origem) (protocolo de origem)
+- Ambas as conexões precisam de certificados públicos válidos, bem como quaisquer certificados intermediários. Certificados autoassinados (self-signed) não funcionarão!
+- Se nossa origem for o S3, não precisamos nos preocupar com esse certificado para o protocolo da origem. O S3 lida com isso nativamente por conta própria. Não precisamos/não podemos aplicar certificados a buckets S3
+
+## CloudFront e SNI (Server Name Indication)
+
+- Historicamente, todo site habilitado para SSL precisava de seu próprio IP
+- A criptografia para HTTP/HTTPS acontece no nível de conexão TCP
+- O cabeçalho do host acontece depois disso na Camada 7. Ele permite especificar a qual aplicativo queremos nos conectar, caso vários aplicativos rodem no mesmo servidor
+- A criptografia TLS ocorre antes de decidir a qual aplicativo queremos acessar
+- Em 2003, uma extensão foi adicionada ao TLS: SNI - permitindo especificar a qual domínio queremos acessar. Isso ocorre no TLS handshake, antes que o HTTP se envolva
+- Isso permite que um servidor com um único IP hospede muitos sites HTTPS que precisam de seus próprios certificados
+- Navegadores mais antigos não suportam SNI necessariamente. O CF precisa alocar endereços IP dedicados para esses usuários, por um custo extra
+- O CF pode ser usado no modo SNI (grátis) ou alocando endereços IP extras (US$ 600 por mês, por distribuição)
+- Arquitetura SSL/SNI do CloudFront:
+    ![SSL/SNI architecture](images/CloudFrontSSLSNI.png)
+- Para origem S3, não precisamos aplicar certificados para o protocolo de origem. Para ALB/EC2/on-prem podemos ter certificados públicos que precisam corresponder ao nome DNS da origem
+
+## Tipos de Origem e Arquitetura
+
+- Origens são os locais para onde o CF vai para obter conteúdo
+- Se houver uma falha de cache no caso de uma requisição, uma busca na origem (origin fetch) ocorre
+- Os grupos de origem (Origin groups) nos permitem adicionar resiliência. Podemos agrupar origens e ter um grupo de origens usado pelo comportamento
+- Categorias de origens:
+    - Buckets do Amazon S3
+    - Endereço (endpoint) do canal do AWS Media Package
+    - Endereço (endpoint) do contêiner do AWS Media Store
+    - Tudo o mais (servidores web - web-servers) - origens personalizadas (custom origins)
+- Se o S3 estiver configurado para ser usado como um servidor web, o CF o verá como uma origem personalizada
+- Opções de configuração de origem S3:
+    - Caminho da Origem (Origin Path): podemos usar um caminho no bucket em vez do nível raiz do bucket
+    - Configurações de controle de acesso original (Original access control settings): é usado para restringir o acesso ao bucket apenas ao CloudFront. A versão legada disso era a Identidade de Acesso de Origem (Origin Access Identity)
+    - Origin Access Identity (legado): mesma finalidade do origin access control
+    - Adicionar cabeçalhos personalizados (opcional): podemos passar cabeçalhos customizados para o bucket S3 de origem
+- No caso do S3, o protocolo do visualizador é combinado com o protocolo da origem. Isso significa que, se usarmos HTTP para os usuários finais, o CF também usará HTTP para acessar o bucket
+- Opções de configuração de origens personalizadas (Custom origin):
+    - Caminho da Origem (Origin Path): podemos configurar o uso de um subcaminho para acessar a origem
+    - Minimum Origin SSL Protocol (Protocolo SSL de Origem Mínimo): versão mínima do protocolo TLS a ser usada com a origem. A melhor prática é selecionar a mais recente compatível com a origem
+    - Origin Protocol Policy (Política de Protocolo de Origem): apenas HTTP, apenas HTTPS ou Match Viewer protocol policy (Corresponder à política de protocolo do visualizador)
+    - Porta HTTP/HTTPS: podemos usar uma porta arbitrária em vez de 80 ou 443 para conseguir conectar-se à origem
+    - Cabeçalhos Personalizados de Origem (Origin Custom Headers): passa cabeçalhos personalizados para a origem. Pode ser usado como segurança para restringir acesso apenas a partir do CF
+
+## Desempenho e Otimização de Cache
+
+- Cache Hit (Acerto de Cache): o objeto está disponível no cache do edge location
+- Cache Miss (Falha de Cache): o objeto não está disponível no cache, a busca na origem é necessária
+- Para aumentar o desempenho, precisamos maximizar a taxa (ratio) entre cache hit e cache miss
+- Podemos recuperar objetos do CF com base nisto:
+    1. Quando requeremos um objeto do CF, geralmente o solicitamos usando o nome
+    2. Também podemos usar parâmetros de string de consulta (query string parameters), exemplo: `index.html&lang=en`
+    3. Cookies
+    4. Request Headers (Cabeçalhos da Requisição)
+- Ao usar o CF, todos esses dados chegam primeiro ao CloudFront e, em seguida, podem ser encaminhados para a origem
+- Podemos configurar o CF para armazenar dados em cache com base em algumas ou em todas essas propriedades de requisição
+- Essas escolhas afetam a performance com que a recuperação de dados da nossa distribuição CF será feita
+- Recomendações de otimização:
+    - Ao usar o CF, devemos encaminhar apenas os cabeçalhos necessários pelo aplicativo e dados de cache com base apenas no que pode alterar o objeto
+    - Quanto mais coisas estiverem envolvidas no armazenamento em cache, menos eficiente será o processo
+
+## Segurança do CloudFront
+
+### OAI/OAC e Origens Personalizadas
+
+- Origens S3:
+
+    - OAI - Origin Access Identity (legado): 
+        - É um tipo de identidade, pode ser associada com distribuições CloudFront
+        - Essencialmente a distribuição CloudFront "torna-se" o OAI, o que significa que essa identidade pode ser usada em políticas de bucket S3
+        - O padrão comum é bloquear o bucket S3 para ser acessível apenas pelo CloudFront
+        - Os edge locations adquirem a identidade OAI vinculada, o que significa que eles conseguirão acessar o bucket
+        - O acesso direto do usuário final ao conteúdo do bucket pode ser desabilitado com uma política de bucket
+        - Os OAIs podem ser criados e usados em várias distribuições CF e vários buckets ao mesmo tempo. É mais fácil gerenciar um OAI com uma distribuição CF
+    - OAC - Origin Access Control (recomendado):
+        - Usado para a mesma finalidade do OAI - restringir o acesso ao bucket apenas ao CF
+        - Se habilitado, o CF assinará cada solicitação ao bucket S3
+        - Uma vez ativado, precisaremos ajustar a política do bucket para permitir requisições da distribuição CF
+- Origens personalizadas:
+    - Não podemos usar o OAI para controlar o acesso!
+    - Podemos utilizar cabeçalhos personalizados, que serão protegidos pelo protocolo HTTPS. O CloudFront será configurado para enviar este cabeçalho customizado
+    - Outra maneira de lidar com a segurança do CloudFront a partir de origens personalizadas é determinar os intervalos de IP dos quais a solicitação está vindo. Os intervalos de IP do CloudFront estão disponíveis publicamente
+
+### Distribuições Privadas
+
+- O CloudFront pode rodar em 2 modos diferentes:
+    - Público: pode ser acessado por qualquer visualizador
+    - Privado: as solicitações para o CloudFront precisam ser feitas com um URL assinado (signed URL) ou cookie assinado
+- Se a distribuição CloudFront tiver apenas 1 comportamento, toda a distribuição é considerada pública ou privada
+- No caso de vários comportamentos: cada comportamento pode ser público ou privado
+- Há duas maneiras de configurar comportamentos privados no CF:
+    - A forma antiga: para habilitar a distribuição privada de conteúdo, precisamos criar uma **CloudFront Key** (Chave CloudFront) pelo Usuário Raiz da Conta (Account Root User). Essa conta é adicionada como um **Trusted Signer** (Assinante Confiável)
+    - A nova (preferencial) forma:
+        - Crie Grupos de Chaves Confiáveis (Trusted Key Groups) e atribua signatários a eles
+        - Os grupos de chaves determinam quais chaves podem ser usadas para criar urls assinados e cookies assinados
+        - Algumas razões pelas quais podemos usar isso em vez da abordagem herdada:
+            - Não precisamos que o usuário raiz da conta gerencie as chaves do CF
+            - Podemos gerenciar grupos de chaves com a API do CF e podemos associar um número maior de chaves com a nossa distribuição/comportamento, oferecendo mais flexibilidade
+- Signed URLs vs Cookies:
+    - URLs assinados fornecem acesso a um objeto específico
+    - Devemos usar URLs assinados se o cliente não oferecer suporte a cookies
+    - Os cookies assinados podem fornecer acesso a grupos de objetos ou a todos os arquivos de um tipo específico
+    - Com cookies assinados, podemos manter o URL do aplicativo se isso for importante
+
+### Restrição Geográfica (Geo Restriction) do CloudFront
+
+- Oferece uma maneira de restringir o conteúdo a um local específico
+- Existem 2 tipos de restrição:
+    - CloudFront Geo Restriction (Restrição Geográfica do CloudFront):
+        - Lista Branca (Whitelist) ou Lista Negra (Blacklist) de países
+        - **Funciona apenas com países!**
+        - Usa um banco de dados GeoIP com 99,8% de precisão alegada
+        - Aplica-se a toda a distribuição
+        ![Geo Restriction Architecture](images/CloudFrontGeoRestriction.png)
+    - 3rd Party Geolocation (Geolocalização de Terceiros):
+        - Totalmente personalizável, pode ser usada para filtrar por muitos outros atributos, exemplo: nome de usuário, atributos de usuário, etc.
+        - Exige um servidor de aplicativos na frente do CloudFront, que controla se o cliente tem ou não acesso ao conteúdo
+        - O aplicativo gera um url/cookie assinado que é retornado ao navegador. Isso pode ser enviado ao CloudFront para autorização
+        ![3rd Party GeoLocation Architecture](images/CloudFront3rdPartyGeoLocation.png)
+
+### Criptografia em Nível de Campo (Field-Level Encryption)
+
+- Podemos configurar a criptografia nos edge locations para certos campos do request usando uma chave pública
+- Útil para criptografar dados confidenciais como senhas, informações de pagamento, etc. diretamente nos edge locations
+- A criptografia em nível de campo acontece separadamente do túnel HTTPS
+- Uma chave privada é necessária para descriptografar os campos individuais
+- A descriptografia dos campos criptografados pode ser feita na origem, se necessário
+- Arquitetura de criptografia em nível de campo:
+    ![Field-Level encryption architecture](images/FieldLevelEncryption2.png)
+
+## Lambda@Edge
+
+- O Lambda@Edge nos permite executar funções Lambda leves nos locais de borda (edge locations)
+- Essas funções Lambda nos permitem ajustar dados entre o visualizador e a origem
+- Funções Lambda que rodam na borda (edge) não possuem o conjunto completo de recursos Lambda:
+    - Atualmente, apenas NodeJS e Python são suportados
+    - As funções não têm acesso a nenhum recurso em uma VPC, elas rodam no espaço público da AWS
+    - Lambda Layers não são suportadas
+- Elas têm limites diferentes de tamanho e duração em comparação com as funções clássicas do Lambda:
+    - Lado do Viewer (Visualizador): 128 MB de limite em tamanho / o timeout (tempo limite) da função é de 5 segundos
+    - Lado da Origem (Origin): o tamanho da função é o mesmo do Lambda clássico / o timeout (tempo limite) da função é de 30 segundos
+- Casos de uso do Lambda@Edge:
+    - Teste A/B - geralmente feito com uma função de Requisição do Visualizador (Viewer Request). A função Lambda pode visualizar a solicitação do usuário e pode modificar a resposta de forma correspondente
+    - Migração entre origens S3 - geralmente feita com uma função de Requisição de Origem (Origin Request)
+    - Objetos diferentes com base no tipo de dispositivo - geralmente feito com uma função Origin Request
+    - Conteúdo exibido por país - geralmente feito com uma função Origin Request
+    - Mais exemplos: [https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-examples.html#lambda-examples-redirecting-examples](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-examples.html#lambda-examples-redirecting-examples)
+
+---
+
+# CloudFront
+
 - It is a content deliver network (CDN)
 - Its job is to improve the delivery of content from its original location to the viewers of the content
 - It is accomplishing this by caching and by using an efficient global network

@@ -1,5 +1,53 @@
 # Snow Family
 
+- A série Snowball foi projetada para mover grandes quantidades de dados para dentro ou fora da AWS
+- Os produtos da série Snow são unidades de armazenamento físico: malas e caminhões
+- Podemos encomendá-los vazios, enchê-los de dados e devolvê-los ou vice-versa
+
+## Snowcone
+
+- É um dispositivo portátil, robusto e seguro para edge computing (computação de borda) e transferência de dados
+- Snowcone está disponível em dois sabores:
+    - Snowcone: tem duas vCPUs, 4 GB de memória e 8 TB de disco baseado em HDD
+    - Snowcone SSD: tem duas vCPUs, 4 GB de memória e 14 TB de armazenamento baseado em SSD
+- Casos de uso do Snowcone:
+    - Aplicativos de edge computing, para coletar dados, processar os dados para obter insights imediatos e, em seguida, transferir os dados online para a AWS
+    - Transferir dados gerados continuamente por sensores ou máquinas online para a AWS numa fábrica ou noutros locais de borda
+    - Distribuir mídia, conteúdo científico ou outro conteúdo dos serviços de armazenamento da AWS para seus parceiros e clientes
+    - Agregar conteúdo transferindo mídia, dados científicos ou outros conteúdos de seus edge locations para a AWS
+
+## Snowball
+
+- É um dispositivo que é encomendado na AWS; registramos um trabalho (job) e o dispositivo nos será entregue
+- Qualquer dado armazenado no Snowball é criptografado usando o KMS
+- Existem 2 tipos de dispositivos com capacidade de 50 TB e 80 TB
+- Em termos de conectividade de rede, podemos ter rede de 1 Gbps (RJ45 1GBase-TX) ou 10 Gbps (LR/SR)
+- A faixa econômica para um Snowball é a faixa de dados de 10 TB a 10 PB (vários dispositivos podem ser usados)
+- Vários dispositivos podem ser encomendados e enviados para várias instalações da empresa
+- O Snowball inclui apenas capacidade de armazenamento
+
+## Snowball Edge
+
+- Inclui tanto capacidade de armazenamento quanto capacidade de computação
+- Tem uma capacidade maior em comparação com o Snowball clássico e possui uma conexão de rede mais rápida
+- Existem 3 tipos diferentes de Snowball Edge:
+    - Otimizado para armazenamento (Storage optimized - com capacidade EC2): 80 TB, 24 vCPU, 32 Gib RAM, 1 TB de SSD local para uso EC2
+    - Otimizado para computação (Compute optimized): 100 TB + 7.68 NVME, 52 vCPU, 208 Gib RAM
+    - Otimizado para computação com GPU: 100 TB + 7.68 NVME, 52 vCPU, 208 Gib RAM, GPU
+- Ideal para locais remotos ou onde o processamento de dados na ingestão é necessário
+
+## Snowmobile (Descontinuado)
+
+- Data center portátil dentro de um contêiner de transporte num caminhão
+- Precisa ser encomendado especialmente pela AWS
+- Ideal para localização única quando são necessários mais de 10 PB+
+- Pode armazenar até 100 PB de dados por Snowmobile
+- Não é econômico para multi-sites ou menos de 10 PB
+
+---
+
+# Snow Family
+
 - Snowball series are designed to move large amount of data in or out of AWS
 - The products in Snow series are physical storage units: suitcases and trucks
 - We can order them empty, load them up and return them or vice-versa

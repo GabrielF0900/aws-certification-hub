@@ -1,5 +1,116 @@
 # API Gateway
 
+- É um serviço que nos permite criar e gerenciar APIs
+- O API Gateway atua como endpoint ou ponto de entrada de aplicativos que desejam falar com nossos serviços
+- Fica entre o aplicativo e as integrações (serviços)
+- O API Gateway é altamente disponível (HA) e escalável
+- Lida com autorização, limitação (throttling), cache, CORS, transformações
+- Também suporta a especificação OpenAPI e integração direta com outros serviços da AWS
+- O API gateway é um serviço público
+- Ele pode fornecer APIs usando REST e WebSocket
+- Visão geral do API Gateway:
+    ![API Gateway Architecture](images/APIGateway.png)
+
+## Autenticação
+
+- O API Gateway suporta uma variedade de tipos de autenticação, como Cognito, autenticação baseada em Lambda (Autenticação baseada em cliente - podemos assumir que o cliente usa um token Bearer) e credenciais do IAM
+- Podemos permitir que as APIs tenham acesso aberto sem autenticação
+
+## Tipos de Endpoint
+
+- **Otimizado para Borda (Edge-Optimized)**: qualquer solicitação de entrada é roteada para o POP (ponto de presença) mais próximo do CloudFront
+- **Região (Region)**: endpoint da região para clientes na mesma região, não utiliza o endpoint do CloudFront
+- **Privado (Private)**: endpoints acessíveis apenas em uma VPC por meio de endpoints de interface
+
+## Estágios (Stages)
+
+- Quando implantamos uma configuração de API, estamos fazendo isso em um estágio
+- Exemplo: podemos ter estágio prod/dev com configurações e urls exclusivos
+- As implantações podem ser revertidas em um estágio
+- Nos estágios, podemos habilitar implantações canário (canary deployments). Quando ativado, a implantação será feita no canário e não no próprio estágio
+- A distribuição de tráfego pode ser alterada entre o estágio canário e o base
+- O estágio canário pode ser promovido para base
+
+## Erros
+
+- `4XX` - Erros do cliente: solicitação inválida do lado do cliente
+- `5XX` - Erros do servidor: solicitação válida, problema no backend
+- `400 - Bad Request`: erro genérico do lado do cliente
+- `403 - Access Denied`: autorizador nega a solicitação, a solicitação é filtrada pelo WAF
+- `429` - O API Gateway pode limitar (throttle): isso significa que excedemos uma quantidade especificada de solicitações
+- `502 - Bad Gateway Exception`: saída inválida retornada pelo Lambda
+- `503 - Service Unavailable`: o endpoint de suporte está offline
+- `504` - Falha de Integração/Tempo Limite (limite de 29s)
+
+## Cache (Caching)
+
+- O cache é configurado por estágio
+- Podemos definir um cache em um estágio (500 MB até 237 GB)
+- O valor padrão do TTL do cache é 300 segundos, configurável entre 0 e 3600s. Pode ser criptografado
+- As chamadas só chegarão ao backend em caso de falha no cache (cache miss)
+
+## Métodos e Recursos (Methods and Resources)
+
+- Exemplo de URL do API Gateway: `https://1nj7i16t37.execute-api.us-east-1.amazonaws.com/dev/listcats`
+- A URL pode representar o seguinte: `[api-gateway-endpoint]/[estágio]/[recurso]`
+- Estágios são configurações lógicas. APIs são implantadas em estágios. Estágios podem ser usados para diferentes versões de aplicativos ou pontos de ciclo de vida de uma API
+- Alterações na API só entram em vigor depois de implantadas em um estágio
+- Os métodos são a ação desejada a ser executada. Os métodos são verbos HTTP
+- Métodos são onde as integrações são configuradas, as quais fornecem a funcionalidade de uma API. Os métodos podem se integrar com Lambda, HTTP e outros serviços da AWS
+
+## Integrações
+
+- O API Gateway é capaz de se conectar ao Lambda, Endpoints HTTP (rodando localmente ou na AWS), Step Functions, SNS, DynamoDB
+- As APIs têm 3 fases:
+    - Solicitação: autorizar, validar e transformar a solicitação
+    - Integrações
+    - Resposta: transformar, preparar e retornar a resposta
+- As fases de solicitação e resposta são divididas em 2 partes:
+    - Solicitação de Método (Method Request): define tudo sobre a solicitação do cliente para o método (caminho, cabeçalhos, parâmetros)
+    - Solicitação de Integração (Integration Request): parâmetros da solicitação de método são transferidos para as integrações
+    - Resposta de Integração (Integration Response): converte os dados do backend em uma forma que possa ser enviada de volta ao cliente
+    - Resposta de Método (Method Response): como a comunicação é entregue de volta ao cliente
+- Métodos de API que estão no lado do cliente decidem como é a solicitação do cliente para o método. Existem integrados a um endpoint de backend por meio de integrações
+- Tipos de integração:
+    - **MOCK**: usado para testes, nenhum back-end envolvido. Ele retorna uma resposta estática
+    - **HTTP**: integração personalizada HTTP, backend é um endpoint HTTP. Temos que configurar a solicitação de integração e a resposta de integração
+    - **HTTP Proxy**: subtipo de integração HTTP, mas onde o proxy é utilizado. Permite o acesso a endpoint HTTP com uma integração simplificada. O proxy é onde a solicitação é passada para o endpoint como está e enviada de volta ao cliente como está
+    - **AWS**: permite que uma API exponha serviços da AWS. Temos que configurar a solicitação e a resposta de integração e configurar mapeamentos necessários da solicitação de método para a solicitação de integração. Pode ser usado com funções Lambda, mas é uma maneira relativamente complexa de usá-lo com o Lambda
+    - **AWS_PROXY (LAMBDA)**: solicitação/resposta de integração não precisam ser definidas, o API Gateway passa a solicitação não modificada
+- Modelo de mapeamento (Mapping template): usado para integrações não proxy. Usado para:
+    - Modificar ou renomear parâmetros
+    - Modificar o corpo ou o cabeçalho da solicitação
+    - Filtragem - remover qualquer coisa da solicitação
+
+## Modelos de Mapeamento (Mapping Templates)
+
+- Usados para integrações AWS e HTTP (não proxy)
+- São capazes de modificar e renomear parâmetros entre as integrações
+- Podem modificar o corpo ou os cabeçalhos de uma solicitação
+- Podem fornecer filtragem, removendo qualquer coisa que não seja necessária
+- O mapeamento usa VTL (Velocity Template Langue) para editar a solicitação
+- Casos de uso para modelos de mapeamento:
+    - Integrar uma API REST no API Gateway com uma API SOAP
+
+## Estágios e Implantações (Stages and Deployments)
+
+- Ao editar uma API, estamos editando configurações que não estão ativas (não publicadas)
+- O estado atual da API precisa ser implantado em um estágio
+- Cada estágio tem sua própria configuração. As configurações não são imutáveis, podem ser modificadas, substituídas ou revertidas
+- Variáveis de estágio: variáveis de ambiente para estágios
+
+## Swagger e OpenAPI
+
+- OpenAPI (OAS) define uma interface padrão agnóstica de linguagem para APIs RESTful
+- OpenAPI v2 é formalmente conhecido como Swagger
+- OpenAPI v3 é uma versão mais recente
+- OpenAPI define endpoints, operações (GET, POST, etc.), parâmetros de entrada e saída e métodos de autenticação
+- O API Gateway é capaz de importar o formato OpenAPI e gerá-lo. Útil para backups e migrações
+
+---
+
+# API Gateway
+
 - Is a service which lets us create and manage APIs
 - API Gateway acts as endpoint or entry-point applications which want to talk with our services
 - Sits between the application and integrations (services)

@@ -1,5 +1,27 @@
 # ElastiCache
 
+- É um banco de dados em memória (in-memory database) para aplicações que precisam de alto desempenho (high-end performance)
+- É ordens de magnitude mais rápido que um BD clássico, mas não possui persistência (is not persistence)
+- O ElastiCache fornece 2 mecanismos (engines) diferentes: Managed Redis (Redis gerenciado) e MemcacheD como um serviço
+- O ElastiCache pode ser usado para cargas de trabalho com muitas leituras (read heavy workloads) com requisitos de baixa latência
+- Pode ser usado para a redução de cargas de trabalho de banco de dados, reduzindo assim o custo acumulado pelo uso intenso do banco de dados
+- Pode ser usado para armazenar dados de sessão, tornando aplicações stateful (com estado) em stateless (sem estado)
+- O uso do ElastiCache requer alterações no código da aplicação!
+
+## Redis vs MemcacheD
+
+- Ambos oferecem acesso aos dados em tempo inferior a um milissegundo (sub-millisecond)
+- O MemcacheD suporta estruturas de dados simples (string), enquanto o Redis pode suportar tipos de dados mais avançados: listas, conjuntos (sets), conjuntos ordenados (sorted sets), hashes, arrays de bits (bit arrays), etc.
+- O Redis suporta a replicação de dados em várias Zonas de Disponibilidade (AZs), o MemcacheD suporta vários nós (nodes) com sharding (fragmentação) manual, mas não suporta "verdadeira" replicação entre AZs por razões de escalabilidade
+- O Redis suporta backups e restaurações, o MemcacheD não suporta persistência
+- O MemcacheD é multithread (múltiplas linhas de execução) por design, pode aproveitar melhor CPUs multithread e pode oferecer melhor desempenho
+- O Redis suporta transações (várias operações de uma só vez)
+- Ambos os motores podem suportar uma variedade de tipos de instâncias
+
+---
+
+# ElastiCache
+
 - It is an in-memory database for application which need high-end performance
 - It is orders of magnitude faster than a classic DB, but is not persistence
 - ElastiCache provides 2 different engines: Managed Redis and MemcacheD as a service

@@ -1,3 +1,94 @@
+# Firewalls de Aplicação (Camada 7)
+
+- Firewalls de Camada 3/4:
+    - Esses tipos de firewalls veem pacotes, segmentos, endereços IP e portas
+    - O fluxo de dados de uma requisição (request) e de uma resposta (response) são vistos como separados
+- Firewalls de Camada 5:
+    - Introduzem capacidade de sessão, vendo os fluxos de requisição/resposta como uma sessão única
+    - Com isso, reduz-se a sobrecarga administrativa (admin overhead), com o acréscimo de poder implementar uma segurança mais contextual
+- Em ambos os casos, eles não entendem nada acima da camada em que operam
+- Firewalls de Camada 7:
+    - Entendem vários protocolos de camada 7, como o HTTP
+    - Conseguem identificar elementos normais/anormais da camada 7
+    - Podem proteger contra vários ataques e fraquezas no nível de protocolo
+    - No caso do HTTPS, a criptografia é terminada (terminated) no firewall para que os dados sejam analisados. Uma nova conexão HTTPS é criada entre o firewall e o servidor
+    - Firewalls de camada 7 podem inspecionar, bloquear, substituir ou rotular dados. Eles podem proteger contra coisas como conteúdo adulto, spam, conteúdo fora do tópico ou malware
+
+## WAF - Web Application Firewall (Firewall de Aplicação Web)
+
+- É um firewall de Camada 7 (entende HTTP/S)
+- Normalmente, os firewalls operam na Camada 3, 4 e 5
+- O WAF protege contra ataques/exploits complexos de Camada 7, como Injeção SQL (SQL Injection) e Cross-Site Scripting (XSS)
+- Ele pode filtrar com base no local (Geo Blocks) e fornece reconhecimento de taxa (rate awareness)
+- As Listas de Controle de Acesso Web (WEBACL) são usadas pelo WAF para proteger serviços, e as associamos a ALB, API Gateway, CloudFront ou ao AppSync
+- WEBACL possui regras e elas são avaliadas quando o tráfego chega
+- Regras (WAF Rules):
+    - Temos regras dentro de Grupos de Regras (Rule Groups) no caso de uma WEBACL. Exemplos de grupos de regras gerenciados pela AWS (AWS managed rule groups) são:
+        - ALLOW LIST/DENY LIST (LISTA DE PERMISSÃO/LISTA DE NEGAÇÃO)
+        - Injeção de SQL
+        - XSS
+        - HTTP Flood (Inundação HTTP)
+        - Reputação de IP
+        - Bots (proteção contra botnets)
+- Listas de Controle de Acesso Web (WEBACL):
+    - São a principal unidade de configuração dentro do WAF
+    - O ponto de partida de uma WEBACL é uma Ação Padrão (Default Action - ALLOW ou BLOCK) usada para qualquer tráfego que não tenha correspondência (match)
+    - A WEBACL é criada para o CloudFront ou para um serviço regional (ALB, API GW, AppSync)
+    - Precisamos adicionar Grupos de Regras/Regras para uma WEBACL a fim de realizar qualquer filtragem. As regras/grupos de regras são processados em ordem
+    - As WEBACLs têm um limite de quanto requisito computacional as regras podem usar. A AWS possui um conceito chamado WEBACL Capacity Units (Unidades de Capacidade WEBACL) para isso
+    - Unidades de Capacidade WEBACL (WCU - WEBACL Capacity Units): indicação da complexidade das regras, há um limite de quantos WCUs podem estar numa única ACL. O máximo padrão é 1500 (pode ser aumentado com um ticket de suporte)
+    - Associar uma WEBACL a um recurso pode levar tempo (dependendo do serviço), ajustar uma WEBACL associada leva menos tempo
+    - Um recurso AWS pode ter 1 ACL, mas 1 WEBACL pode ser associada a muitos recursos. Não podemos associar uma ACL do CloudFront a outros serviços regionais
+    - AWS Outposts não suportam WEBACLs
+- Grupos de Regras (Rule groups):
+    - Grupos de regras
+    - Eles não têm ações padrão, a ação padrão é definida quando os grupos são adicionados às WEBACLs
+    - Os grupos de regras podem ser Gerenciados (AWS ou Marketplace), Seus (Yours), De propriedade do Serviço (Shield e Firewall Manager)
+    - A maioria dos grupos de regras gerenciados pela AWS está disponível gratuitamente para clientes AWS (controle de bots AWS WAF / controle de fraude têm taxas adicionais)
+    - Grupos de regras obtidos no marketplace têm assinaturas anexadas
+    - Quando criamos um grupo de regras, definimos antecipadamente a capacidade WCU (máx. 1500)
+- Regras (Rules):
+    - Estrutura de uma regra: Tipo (Type), Declaração (Statement), Ação (Action)
+        - Tipo: determina em alto nível como a regra funciona
+        - Declaração: uma ou mais coisas que podem corresponder ao tráfego ou não
+        - Ação: o que o WAF faz se o tráfego corresponder (matched)
+    - O tipo de uma regra pode ser Regular ou Baseado em Taxa (Rate-based)
+        - Regular: projetada para corresponder se algo ocorrer
+        - Baseado em taxa (Rate-based): projetada para corresponder se algo ocorrer após uma determinada taxa
+    - Declaração de uma regra: define o que as regras verificam
+        - Para regras regulares, COM O QUE a regra é comparada
+        - Para regras baseadas em taxa, aplicamos um limite de taxa no número de conexões para um endereço IP de origem ou aplicamos um limite de taxa no número de conexões em um endereço IP para conexões que correspondam a certos critérios
+    - Em termos de critérios, podemos comparar (match against) com:
+        - País de origem
+        - IP
+        - Rótulo (Label)
+        - Cabeçalho (Header)
+        - Cookies
+        - Parâmetros de consulta (Query parameters)
+        - Caminho do URI (URI path)
+        - Corpo da string de consulta (Query string body - apenas os primeiros 8192 bytes)
+        - Método HTTP
+    - Podemos ter diferentes tipos de correspondências (matches): correspondência exata, começa com, contém, expressão regular, etc.
+    - Também podemos ter mais de uma declaração com condições AND, OR, NOT
+    - Ação:
+        - Para regras regulares, podemos ter permitir (allow), bloquear (block), contar (count), captcha, resposta personalizada/cabeçalho personalizado (`x-amzn-waf-`), rótulo (label)
+        - Para regras baseadas em taxa, "permitir" não é uma ação válida, só temos bloqueio, contagem e captcha
+        - Resposta personalizada e cabeçalho personalizado podem ser usados com a ação de bloqueio. Para permitir, podemos usar apenas um cabeçalho personalizado
+        - Rótulo (Label) pode ser adicionado ao tráfego. Rótulos são conceitos internos do WAF. Eles permitem fluxos de vários estágios, onde a primeira regra adiciona um rótulo, e a regra posterior pode rodar independentemente se o rótulo está presente ou não
+- Preços (Pricing):
+    - Somos cobrados por cada WEBACL por mês (atualmente $5/mês). WEBACL pode ser reutilizada!
+    - Regras em WEBACL são cobradas mensalmente (atualmente $1/mês)
+    - Seremos cobrados por cada grupo de regras ou grupo de regras gerenciadas que adicionarmos à nossa ACL
+    - Seremos cobrados por cada requisição processada por ACL ($0,60 por milhão de requisições mensalmente)
+    - Recursos de segurança opcionais podem ser habilitados por custos adicionais:
+        - Mitigação de Ameaças Inteligente (Intelligent Threat Mitigation)
+        - Controle de Bot (Bot Control) ($10/mês) + ($1 por 1 milhão de requisições)
+        - Captcha
+        - Controle de Fraude / Assunção de Conta (Fraud Control/Account Takeover)
+    - Grupos de Regras do Marketplace vêm com custo extra
+
+---
+
 # Application (Layer 7) Firewalls
 
 - Layer 3/4 firewalls:

@@ -101,95 +101,95 @@ Esses arquivos já tinham conteúdo em português antes de começarmos o trabalh
 ### 09-containers-and-serverless
 | Arquivo | Status |
 |---|---|
-| `api-gateway.md` | ⏳ Pendente |
-| `app-runner.md` | ⏳ Pendente |
-| `appsync.md` | ⏳ Pendente |
-| `ecs.md` | ⏳ Pendente |
-| `eks.md` | ⏳ Pendente |
-| `eventbridge.md` | ⏳ Pendente |
-| `iot.md` | ⏳ Pendente |
-| `lambda.md` | ⏳ Pendente |
-| `mechanical-turk.md` | ⏳ Pendente |
-| `mediaconvert.md` | ⏳ Pendente |
-| `mq.md` | ⏳ Pendente |
-| `sam.md` | ⏳ Pendente |
-| `sns.md` | ⏳ Pendente |
-| `sqs.md` | ⏳ Pendente |
-| `step-functions.md` | ⏳ Pendente |
-| `swf.md` | ⏳ Pendente |
+| `api-gateway.md` | ✅ Traduzido |
+| `app-runner.md` | ✅ Traduzido |
+| `appsync.md` | ✅ Traduzido |
+| `ecs.md` | ✅ Traduzido |
+| `eks.md` | ✅ Traduzido |
+| `eventbridge.md` | ✅ Traduzido |
+| `iot.md` | ✅ Traduzido |
+| `lambda.md` | ✅ Traduzido |
+| `mechanical-turk.md` | ✅ Traduzido |
+| `mediaconvert.md` | ✅ Traduzido |
+| `mq.md` | ✅ Traduzido |
+| `sam.md` | ✅ Traduzido |
+| `sns.md` | ✅ Traduzido |
+| `sqs.md` | ✅ Traduzido |
+| `step-functions.md` | ✅ Traduzido |
+| `swf.md` | ✅ Traduzido |
 
 ### 10-caching
 | Arquivo | Status |
 |---|---|
-| `cloudfront.md` | ⏳ Pendente |
-| `elasticache.md` | ⏳ Pendente |
+| `cloudfront.md` | ✅ Traduzido |
+| `elasticache.md` | ✅ Traduzido |
 
 ### 11-migrations
 | Arquivo | Status |
 |---|---|
-| `6r.md` | ⏳ Pendente |
-| `datasync.md` | ⏳ Pendente |
-| `dms.md` | ⏳ Pendente |
-| `snow.md` | ⏳ Pendente |
-| `storage-gateway.md` | ⏳ Pendente |
-| `vm-migration.md` | ⏳ Pendente |
+| `6r.md` | ✅ Traduzido |
+| `datasync.md` | ✅ Traduzido |
+| `dms.md` | ✅ Traduzido |
+| `snow.md` | ✅ Traduzido |
+| `storage-gateway.md` | ✅ Traduzido |
+| `vm-migration.md` | ✅ Traduzido |
 
 ### 12-security-and-config
 | Arquivo | Status |
 |---|---|
-| `acm.md` | ⏳ Pendente |
-| `application-firewalls.md` | ⏳ Pendente |
-| `audit-manager.md` | ⏳ Pendente |
-| `cloudhsm.md` | ⏳ Pendente |
-| `config.md` | ⏳ Pendente |
-| `detective.md` | ⏳ Pendente |
-| `guard-duty.md` | ⏳ Pendente |
-| `inspector.md` | ⏳ Pendente |
-| `kms.md` | ⏳ Pendente |
-| `network-and-dns-firewall.md` | ⏳ Pendente |
-| `parameter-store.md` | ⏳ Pendente |
-| `secrets-manager.md` | ⏳ Pendente |
-| `security-hub.md` | ⏳ Pendente |
-| `shield.md` | ⏳ Pendente |
-| `vpc-flow-logs.md` | ⏳ Pendente |
+| `acm.md` | ✅ Traduzido |
+| `application-firewalls.md` | ✅ Traduzido |
+| `audit-manager.md` | ✅ Traduzido |
+| `cloudhsm.md` | ✅ Traduzido |
+| `config.md` | ✅ Traduzido |
+| `detective.md` | ✅ Traduzido |
+| `guard-duty.md` | ✅ Traduzido |
+| `inspector.md` | ✅ Traduzido |
+| `kms.md` | ✅ Traduzido |
+| `network-and-dns-firewall.md` | ✅ Traduzido |
+| `parameter-store.md` | ✅ Traduzido |
+| `secrets-manager.md` | ✅ Traduzido |
+| `security-hub.md` | ✅ Traduzido |
+| `shield.md` | ✅ Traduzido |
+| `vpc-flow-logs.md` | ✅ Traduzido |
 
 ### 13-disaster-recovery
 | Arquivo | Status |
 |---|---|
-| `dr.md` | ⏳ Pendente |
-| `drs.md` | ⏳ Pendente |
+| `dr.md` | ✅ Traduzido |
+| `drs.md` | ✅ Traduzido |
 
 ### 14-iac
 | Arquivo | Status |
 |---|---|
-| `cloudformation.md` | ⏳ Pendente |
+| `cloudformation.md` | ✅ Traduzido |
 
 ### 15-deployment
 | Arquivo | Status |
 |---|---|
-| `cicd.md` | ⏳ Pendente |
-| `eb.md` | ⏳ Pendente |
-| `opsworks.md` | ⏳ Pendente |
-| `proton.md` | ⏳ Pendente |
-| `service-catalog.md` | ⏳ Pendente |
-| `ssm.md` | ⏳ Pendente |
+| `cicd.md` | ✅ Traduzido |
+| `eb.md` | ✅ Traduzido |
+| `opsworks.md` | ✅ Traduzido |
+| `proton.md` | ✅ Traduzido |
+| `service-catalog.md` | ✅ Traduzido |
+| `ssm.md` | ✅ Traduzido |
 
 ### 16-other
 | Arquivo | Status |
 |---|---|
-| `comprehend.md` | ⏳ Pendente |
-| `device-farm.md` | ⏳ Pendente |
-| `forecast.md` | ⏳ Pendente |
-| `fraud-detector.md` | ⏳ Pendente |
-| `glue.md` | ⏳ Pendente |
-| `kendra.md` | ⏳ Pendente |
-| `kinesis-video-streams.md` | ⏳ Pendente |
-| `lex.md` | ⏳ Pendente |
-| `polly.md` | ⏳ Pendente |
-| `rekognition.md` | ⏳ Pendente |
-| `textract.md` | ⏳ Pendente |
-| `transcribe.md` | ⏳ Pendente |
-| `translate.md` | ⏳ Pendente |
+| `comprehend.md` | ✅ Traduzido |
+| `device-farm.md` | ✅ Traduzido |
+| `forecast.md` | ✅ Traduzido |
+| `fraud-detector.md` | ✅ Traduzido |
+| `glue.md` | ✅ Traduzido |
+| `kendra.md` | ✅ Traduzido |
+| `kinesis-video-streams.md` | ✅ Traduzido |
+| `lex.md` | ✅ Traduzido |
+| `polly.md` | ✅ Traduzido |
+| `rekognition.md` | ✅ Traduzido |
+| `textract.md` | ✅ Traduzido |
+| `transcribe.md` | ✅ Traduzido |
+| `translate.md` | ✅ Traduzido |
 
 ---
 
@@ -198,11 +198,11 @@ Esses arquivos já tinham conteúdo em português antes de começarmos o trabalh
 | Categoria | Quantidade |
 |---|---|
 | ✅ Já estavam traduzidos (antes da sessão) | ~11 arquivos |
-| ✅ Traduzidos nesta sessão | 26 arquivos |
-| ⏳ Ainda precisam ser traduzidos | 58 arquivos |
+| ✅ Traduzidos nesta sessão | 84 arquivos |
+| ⏳ Ainda precisam ser traduzidos | 0 arquivos |
 | **Total** | **~95 arquivos** |
 
 ---
 
-*Última atualização: 12/07/2026 — Pausado após concluir o diretório `08-data-analytics`.*
-*Próximo a traduzir: `09-containers-and-serverless/api-gateway.md`*
+*Última atualização: 12/07/2026 — Traduzido o diretório `16-other` completo.*
+*Próximo a traduzir: Todo o repositório foi traduzido.*

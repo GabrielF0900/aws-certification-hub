@@ -1,5 +1,35 @@
 # CloudHSM
 
+- Semelhante ao KMS, ele cria, gerencia e protege material criptográfico ou chaves
+- O KMS é um serviço compartilhado. A AWS tem um certo nível de acesso ao produto, eles gerenciam o hardware e o software do sistema
+- O KMS usa dispositivos HSM nos bastidores (behind the scene)
+- O CloudHSM é um verdadeiro HSM (Módulo de Segurança de Hardware) de locatário único (single tenant) hospedado pela AWS <span style="background-color: Red"><-- LEMBRE-SE DISSO PARA O EXAME</span>
+- A AWS provisiona o hardware para o CloudHSM, mas eles não têm acesso a ele. No caso de perda de acesso a um dispositivo HSM, não há uma maneira fácil de recuperar o acesso a ele
+- O CloudHSM é totalmente compatível com FIPS 140-2 Nível 3 (KMS é compatível com Nível 2 em geral) <span style="background-color: Red"><-- LEMBRE-SE DISSO PARA O EXAME</span>
+- O CloudHSM é acessado com APIs de padrões do setor (industry standards): bibliotecas PKCS#11, Java Cryptography Extensions (JCE), Microsoft CryptoNG (CNG). Não é tão integrado a outros serviços da AWS por design (em comparação, o KMS integra-se basicamente a todos os serviços) <span style="background-color: Red"><-- LEMBRE-SE DISSO PARA O EXAME</span>
+- O KMS pode usar o CloudHSM como um **armazenamento de chaves personalizado (custom key store)**, integração do CloudHSM com o KMS
+
+## Arquitetura CloudHSM
+
+- Os dispositivos CloudHSM são implantados em uma VPC gerenciada pela AWS, na qual não temos visibilidade
+- Eles são injetados em VPCs gerenciadas pelo cliente usando ENIs (Elastic Network Interfaces)
+- Para HA (Alta Disponibilidade), precisamos implantar vários dispositivos HSM e configurá-los como um cluster
+- Um cliente (client) precisa ser instalado nas instâncias EC2 para conseguir acessar os módulos HSM
+- Embora a AWS provisione os dispositivos HSM, nós, como clientes, somos responsáveis pelo gerenciamento das chaves do cliente
+- A AWS pode fornecer atualizações de software nos dispositivos HSM, mas elas não devem afetar a parte de armazenamento de criptografia
+
+## Casos de Uso/Limitações do CloudHSM
+
+- Não há integração nativa com os serviços da AWS (exceto o KMS), o que significa que o CloudHSM não pode ser usado para SSE do S3
+- O CloudHSM pode ser usado para criptografia no lado do cliente (client-side encryption) antes de fazer upload de dados para o S3
+- O CloudHSM pode ser usado para descarregar (offload) o processamento SSL/TLS de servidores web. É econômico e eficiente usar o CloudHSM.
+- Bancos de dados Oracle no RDS podem realizar Transparent Data Encryption (TDE) usando o CloudHSM
+- O CloudHSM pode ser usado para proteger chaves privadas para uma Autoridade Certificadora Emissora (Issuing Certificate Authority - CA)
+
+---
+
+# CloudHSM
+
 - Similar to KSM, it creates, manages and secures cryptographic material or keys
 - KMS is a shared service. AWS has a certain level of access to the product, they manage the hardware and the software of the system
 - KMS uses behind the scene HSM devices

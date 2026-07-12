@@ -1,5 +1,233 @@
 # CloudFormation
 
+## Recursos Físicos e Lógicos (Physical and Logical Resources)
+
+- O CloudFormation começa com um modelo (template) definido em arquivo YAML ou JSON
+- O template contém recursos lógicos (o que queremos criar)
+- Templates podem ser usados para criar Stacks (pilhas) do CloudFormation (uma ou várias stacks)
+- O trabalho inicial de uma stack é criar recursos físicos com base nos recursos lógicos definidos no template
+- Se o template de uma stack for alterado, os recursos físicos também serão alterados
+- Se uma stack for excluída, normalmente os recursos físicos serão excluídos
+
+## Pilhas (Stacks)
+
+- Uma stack é uma coleção de recursos da AWS que você pode gerenciar como uma unidade única
+- Todos os recursos em uma stack são definidos pelo template do CloudFormation da stack
+- Opções da Stack:
+    - Tags: pares de chave/valor (key/value) anexados à stack. Podem ser usados para identificar a stack para fins de alocação de custos
+    - Permissões: IAM service role (função de serviço) que pode ser assumida pelo CloudFormation
+    - Opções de falha da stack (Stack failure options):
+        - Especifica o que fazer se algo falhar enquanto a stack é provisionada
+        - Opções:
+            - Reverter (Roll back) todos os recursos da stack
+            - Preservar recursos provisionados com sucesso
+    - Política da stack (Stack policy): define os recursos que queremos proteger de atualizações não intencionais durante uma atualização da stack
+    - Configuração de reversão (Rollback configuration): podemos monitorar a stack enquanto ela está sendo criada/atualizada e podemos revertê-la caso um limite (threshold) seja violado (exemplo: se algum alarme entrar no estado ALARM)
+    - Opções de notificação: podemos especificar um tópico SNS para onde as notificações devem ir
+    - Opções de criação da stack (Stack creation options): as seguintes opções estão incluídas para criação da stack, mas não estão disponíveis como parte das atualizações:
+        - Tempo limite (Timeout): Especifica a quantidade de tempo, em minutos, que o CloudFormation deve alocar antes de esgotar o tempo limite (timing out) das operações de criação da stack
+
+## Parâmetros de Template e Pseudo Parâmetros
+
+- Os parâmetros de template permitem entrada via console, CLI ou API quando a stack é criada ou atualizada
+- Os parâmetros são definidos dentro dos recursos e podem ser referenciados dentro dos recursos lógicos
+- Parâmetros podem ter valores padrão (default values), valores permitidos, tamanho mínimo/máximo, padrões permitidos (allowed patterns), no echo (útil para senhas, o valor não é exibido quando digitado) e tipos
+- Pseudo Parâmetros:
+    - A AWS disponibiliza parâmetros que podem ser referenciados pelo template CF
+    - Exemplo:
+        - `AWS::Region`
+        - `AWS::StackId`
+        - `AWS::StackName`
+        - `AWS::AccountId`
+    - Pseudo parâmetros são parâmetros que não podem ser preenchidos por nós, eles são preenchidos pela AWS e fornecidos para que possamos referenciá-los
+- Parâmetros fornecem portabilidade para o template
+- Melhores práticas (Best practice):
+    - Minimize o número de parâmetros e forneça padrões (defaults) quando aplicável
+    - Use pseudo parâmetros sempre que possível
+
+## Funções Intrínsecas (Intrinsic Functions)
+
+- Funções intrínsecas podem ser usadas em templates para atribuir valores a propriedades que não estão disponíveis até o tempo de execução (runtime)
+- Exemplos de funções:
+    - `Ref` e `Fn::GetAtt`: referenciam um valor de um recurso lógico
+    - `Fn::Join` e `Fn::Split`: juntam/separam strings para criar novas
+    - `Fn::GetAZs` e `Fn::Select`: obtém zonas de disponibilidade (AZs) em uma região e seleciona uma
+    - Condições: `Fn::IF`, `And`, `Equals`, `Not`, `Or`
+    - `Fn::Base64` e `Fn::Sub`: codifica strings para base64, substitui variáveis no texto (substitute replacement)
+    - `Fn::Cidr`: constrói blocos CIDR
+- `Fn::GetAZs` - retorna as AZs disponíveis na região. Se a região tiver uma VPC padrão configurada, ela retorna as AZs que estão disponíveis na VPC padrão
+
+## Mapeamentos (Mappings)
+
+- Templates podem conter um objeto `Mappings` que pode conter chaves (keys) para objetos de valores (values)
+- Os mapeamentos podem ter um nível ou chaves de segundo nível
+- Os mapeamentos usam outra função intrínseca `Fn::FindInMap`
+- Os mapeamentos são usados para melhorar a portabilidade do template
+- Exemplo:
+    ```
+    Mappings:
+        RegionMap:
+            us-east-1:
+                HVM64: 'ami-xxx'
+                HVMG2: 'ami-yyy'
+            us-east-2:
+                HVM64: 'ami-zzz'
+                HVMG2: 'ami-vvv'
+    ```
+
+## Saídas (Outputs)
+
+- A seção `Outputs` em um template é opcional
+- Podemos declarar valores nesta seção que ficarão visíveis como saída no CLI/Console
+- A saída (Output) estará acessível de uma stack pai (parent stack) ao usar aninhamento (nesting)
+- As saídas podem ser exportadas, permitindo referências entre stacks (cross-stack references)
+- Exemplo:
+    ```
+    Outputs:
+        WordPressUrl:
+            Description: 'texto de descrição'
+            Value: !Join['', 'https://', !GetAtt Instance.DNSName]
+    ```
+
+## Condições (Conditions)
+
+- Permite que a stack reaja a certas condições e mude a infraestrutura com base nelas
+- São declaradas numa seção opcional chamada `Conditions`
+- Podemos declarar muitas condições, cada uma delas sendo avaliada como `TRUE` (VERDADEIRO) ou `FALSE` (FALSO)
+- Condições são avaliadas antes da criação dos recursos
+- Condições usam outras funções intrínsecas: `AND`, `EQUALS`, `IF`, `NOT`, `OR`
+- Qualquer recurso pode ter uma condição associada que definirá se o recurso será criado ou não
+- Exemplos: podemos ter condições que são avaliadas com base no ambiente (dev, test, prod) em que o template é executado
+- Exemplo de condição:
+    ```
+    Conditions:
+        IsProd: !Equals
+            - !Ref EnvType
+            - `prod`
+    ```
+- Condições podem ser aninhadas (nested)
+
+## DependsOn (Depende De)
+
+- Permite-nos estabelecer dependências entre recursos
+- O CFN tenta ser eficiente criando/atualizando/excluindo recursos em paralelo
+- Além disso, ele tenta determinar uma ordem de dependência (exemplo: VPC => SUBNET => EC2) usando referências ou funções
+- A dependência pode ser definida usando a propriedade `DependsOn` para especificar o recurso do qual dependemos
+- `DependsOn` pode aceitar um único recurso ou uma lista de recursos
+
+## Políticas de Criação, Condições de Espera e cfn-signal (Creation Policies, Wait Conditions and cfn-signal)
+
+- As Políticas de Criação, Condições de Espera e sinais do cfn (cfn-signals) fornecem algumas maneiras de notificar o CFN com detalhes (sinais) sobre a conclusão ou não da criação de recursos
+- Podemos configurar o CFN para aguardar um determinado número de sinais de sucesso
+- Também configuramos um tempo limite (timeout) dentro do qual os sinais são recebidos (máximo de 12H)
+- Se o número de sinais de sucesso for recebido dentro do tempo limite, as stacks do CFN mudam para `CREATE_COMPLETE`
+- O `cfn-signal` é um utilitário (utility) rodando nas instâncias EC2 enviando sinais de sucesso/falha ao CFN
+- Se o tempo limite for atingido e o número de sinais de sucesso não for alcançado, a criação da stack falhará
+- Para o provisionamento de EC2 e ASG, devemos usar uma `CreationPolicy` (Política de Criação)
+- Para outros requisitos, podemos optar por usar uma `WaitCondition` (Condição de Espera)
+- Uma `WaitCondition` é definida como um recurso lógico, o que significa que pode ter a propriedade `DependsOn`. Ela pode ser usada como um portão (gait/gate) de progresso geral no template
+- Uma `WaitCondition` depende de um `WaitHandle` (Identificador de Espera), que é outro recurso lógico. Seu trabalho é gerar uma URL pré-assinada (presigned url) que pode ser usada para enviar sinais à `WaitCondition`
+- Com o `WaitHandle` podemos repassar (pass back) dados para o template. Esses dados podem ser recuperados usando a função `!GetAtt WaitCondition.Data`
+
+## Stacks Aninhadas (Nested Stacks)
+
+- A maioria dos projetos simples utilizará geralmente uma stack CFN
+- Stacks podem ter limites:
+    - Limite de recursos: 500 recursos por stack
+    - Não podemos reutilizar recursos facilmente, exemplo referenciar uma VPC
+- Existem 2 maneiras de arquitetar projetos multi-stack:
+    - Stacks Aninhadas (Nested Stacks)
+    - Referências entre Stacks (Cross-Stack References)
+- Nested Stacks:
+    - Root Stack (Stack Raiz): a stack que é criada primeiro, criada manualmente ou usando alguma automação
+    - Uma Parent Stack (Stack Pai) é a controladora de qualquer stack que ela cria imediatamente
+    - Uma stack raiz pode criar stacks aninhadas tendo várias stacks pai
+    - Uma stack raiz pode ter parâmetros e saídas (assim como uma stack normal)
+- Uma stack pode ter outra stack do CFN como recurso usando o tipo `AWS::CloudFormation::Stack` que precisa de uma url para o template
+- Podemos fornecer valores de entrada para as stacks aninhadas. Precisamos fornecer valores a quaisquer parâmetros de uma stack aninhada se o parâmetro não tiver um valor padrão definido
+- Quaisquer saídas (outputs) de uma stack aninhada são retornadas para a stack raiz, podendo ser referenciadas como `NESTEDStack.Outputs.XXX`
+- O benefício de uma stack aninhada é reutilizar o mesmo template, e não a stack real criada
+- Devemos usar stacks aninhadas quando quisermos vincular os ciclos de vida de diferentes stacks
+
+## Referências Entre Stacks (Cross-Stack References)
+
+- Stacks CFN são projetadas para serem isoladas e autossuficientes (self-contained)
+- Com stacks aninhadas podemos reutilizar apenas o código; com referências cross-stack podemos referenciar recursos criados por outras stacks
+- As saídas (Outputs) normalmente não são visíveis a partir de outras stacks, com exceção de stacks aninhadas onde a stack pai pode referenciar a saída da stack aninhada
+- As saídas de um template podem ser exportadas tornando-as visíveis a partir de outras stacks
+- As exportações (Exports) devem ter nomes únicos na região
+- Para usar os recursos exportados, podemos usar a função intrínseca `Fn::ImportValue`
+- Cross-region (inter-região) ou cross-account (entre contas) não é suportado para referências cross-stack
+
+## StackSets (Conjuntos de Stacks)
+
+- Permite criar/atualizar/excluir infraestrutura em muitas regiões ou muitas contas
+- StackSets são contêineres numa conta de administrador (conta onde o StackSet é aplicado, não precisa ser nenhuma conta especial)
+- StackSets contêm instâncias de stack (stack instances - contêineres para stacks individuais) que referenciam stacks
+- Instâncias de stack e stacks são criadas em contas de destino (target accounts)
+- Cada stack criada por um StackSet é uma stack criada em uma região em uma conta
+- Segurança: podemos usar funções gerenciadas por conta própria (self-managed roles) ou funções gerenciadas pelo serviço (service-managed roles - tudo tratado pelo produto). O CFN assumirá uma função (role) para interagir com as contas de destino
+- Terminologia:
+    - Contas Concorrentes (Concurrent Accounts): um valor especificando em quantas contas podemos implantar ao mesmo tempo
+    - Tolerância a Falhas (Failure Tolerance): quantidade de implantações individuais que podem falhar antes de declarar o próprio StackSet como falho
+    - Reter Stacks (Retain Stacks): remove instâncias de stack de um StackSet, mas retém a infraestrutura
+- Casos de uso de StackSet:
+    - Criar Regras do AWS Config
+    - Criar IAM Roles (Funções do IAM) para acesso entre contas (cross-account)
+
+## DeletionPolicy (Política de Exclusão)
+
+- Se excluirmos um recurso lógico de um template, por padrão o recurso físico será excluído pelo CFN
+- Com certos tipos de recursos isso pode causar perda de dados
+- Com a política de exclusão (deletion policy), podemos definir em cada recurso para **Delete** (excluir - padrão), **Retain** (reter) ou **Snapshot** (se compatível)
+- Os recursos suportados para snapshot são: volumes EBS, ElastiCache, Neptune, RDS, Redshift
+- Com o snapshot, antes do recurso físico ser excluído, um snapshot é feito
+- As políticas de exclusão se aplicam apenas à operação de exclusão (delete), NÃO à operação de substituição (replace)!
+
+## Stack Roles (Funções de Stack)
+
+- Por padrão, o CFN usa as permissões da identidade que inicia a criação da stack
+- As funções de stack do CFN (CFN stack roles) são um recurso em que o CFN pode assumir uma função (role) para ganhar permissões e criar recursos de uma stack, sem a necessidade do iniciador ter as permissões necessárias
+- A identidade que cria a stack não precisa de permissões de recurso, apenas `PassRole`
+
+## `AWS::CloudFormation::Init` e `cfn-init`
+
+- CloudFormationInit é um sistema simples de gerenciamento de configurações
+- Diretivas de configuração são armazenadas no template
+- `AWS::CloudFormation::Init` é parte do recurso lógico da instância EC2. Com ele podemos especificar configurações que serão aplicadas à instância EC2 criada
+- O User Data é procedural (COMO as coisas devem ser feitas) / o `cfn-init` é um estado desejado (O QUE queremos que ocorra)
+- `cfn-init` pode ser multiplataforma (cross-platform) e idempotente
+- O acesso aos dados do CFN init é feito com o script auxiliar `cfn-init` que deve ser instalado na instância
+
+## `cfn-hup`
+
+- `cfn-init` é uma ferramenta auxiliar (helper tool) que roda apenas uma vez como parte do bootstrapping (user data)
+- Se o `AWS::CloudFormation::Init` for atualizado, o `cfn-init` não rodará novamente
+- `cfn-hup` é uma ferramenta auxiliar que pode ser instalada nas instâncias EC2
+- Ela detectará alterações nos metadados (metadata) dos recursos
+- Quando a alteração é detectada, ela pode rodar ações configuráveis. Pode rodar o `cfn-init` novamente se necessário
+
+## Conjuntos de Alterações (Change Sets)
+
+- Os Change Sets nos permitem prever as alterações que acontecerão após atualizarmos uma stack
+- Podemos ter vários change sets e visualizar cada um deles
+- Podemos escolher qual change set queremos aplicar executando-o
+
+## Custom Resources (Recursos Personalizados)
+
+- O CloudFormation não suporta tudo na AWS
+- Os Custom Resources permitem que o CFN se integre a qualquer coisa que ele ainda não suporte ou que não vá suportar de jeito nenhum
+- Com Custom Resources podemos estender o CFN para fazer coisas que ele não suporta nativamente (exemplo: buscar configuração de terceiros)
+- Arquitetura de custom resources:
+    - O CFN envia dados para um endpoint (ponto de extremidade) definido no custom resource
+    - Esse endpoint pode ser uma função Lambda ou um tópico SNS
+    - Quando um custom resource é criado/atualizado/excluído, o CFN envia eventos para esse endpoint contendo a operação e quaisquer informações de propriedades adicionais
+    - A computação (função Lambda) pode responder a esses dados personalizados, informando-o sobre o sucesso/falha de sua execução
+
+---
+
+# CloudFormation
+
 ## Physical and Logical Resources
 
 - CloudFormation begins with a template defined in YAML or JSON file
