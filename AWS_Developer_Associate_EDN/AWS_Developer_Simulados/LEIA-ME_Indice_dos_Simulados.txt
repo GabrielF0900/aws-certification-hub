@@ -1,0 +1,38 @@
+SIMULADOS AWS CERTIFIED DEVELOPER – ASSOCIATE (DVA-C02)
+
+Estrutura: quatro subpastas, uma para cada domínio; em cada subpasta, simulados em Word de até 20 questões.
+Questões, opções e gabaritos foram extraídos dos seis simulados enviados; a organização segue a classificação utilizada nos documentos anteriores.
+Cada Word contém seu próprio gabarito ao final. Questões possuem numeração sequencial dentro do respectivo domínio e referência à pergunta de origem.
+
+RESUMO POR DOMÍNIO:
+Domínio 1 — Desenvolvimento com serviços da AWS: 124 questões, 7 arquivos Word
+    Simulado 01: questões 001–020 (20 questões) — D1_Simulado_01_Questoes_001_a_020.docx
+    Simulado 02: questões 021–040 (20 questões) — D1_Simulado_02_Questoes_021_a_040.docx
+    Simulado 03: questões 041–060 (20 questões) — D1_Simulado_03_Questoes_041_a_060.docx
+    Simulado 04: questões 061–080 (20 questões) — D1_Simulado_04_Questoes_061_a_080.docx
+    Simulado 05: questões 081–100 (20 questões) — D1_Simulado_05_Questoes_081_a_100.docx
+    Simulado 06: questões 101–120 (20 questões) — D1_Simulado_06_Questoes_101_a_120.docx
+    Simulado 07: questões 121–124 (4 questões) — D1_Simulado_07_Questoes_121_a_124.docx
+Domínio 2 — Segurança: 93 questões, 5 arquivos Word
+    Simulado 01: questões 001–020 (20 questões) — D2_Simulado_01_Questoes_001_a_020.docx
+    Simulado 02: questões 021–040 (20 questões) — D2_Simulado_02_Questoes_021_a_040.docx
+    Simulado 03: questões 041–060 (20 questões) — D2_Simulado_03_Questoes_041_a_060.docx
+    Simulado 04: questões 061–080 (20 questões) — D2_Simulado_04_Questoes_061_a_080.docx
+    Simulado 05: questões 081–093 (13 questões) — D2_Simulado_05_Questoes_081_a_093.docx
+Domínio 3 — Implantação: 98 questões, 5 arquivos Word
+    Simulado 01: questões 001–020 (20 questões) — D3_Simulado_01_Questoes_001_a_020.docx
+    Simulado 02: questões 021–040 (20 questões) — D3_Simulado_02_Questoes_021_a_040.docx
+    Simulado 03: questões 041–060 (20 questões) — D3_Simulado_03_Questoes_041_a_060.docx
+    Simulado 04: questões 061–080 (20 questões) — D3_Simulado_04_Questoes_061_a_080.docx
+    Simulado 05: questões 081–098 (18 questões) — D3_Simulado_05_Questoes_081_a_098.docx
+Domínio 4 — Solução de problemas e otimização: 75 questões, 4 arquivos Word
+    Simulado 01: questões 001–020 (20 questões) — D4_Simulado_01_Questoes_001_a_020.docx
+    Simulado 02: questões 021–040 (20 questões) — D4_Simulado_02_Questoes_021_a_040.docx
+    Simulado 03: questões 041–060 (20 questões) — D4_Simulado_03_Questoes_041_a_060.docx
+    Simulado 04: questões 061–075 (15 questões) — D4_Simulado_04_Questoes_061_a_075.docx
+
+NOTAS:
+1. Algumas questões envolvem mais de um domínio; a separação considera o foco principal.
+2. Duas perguntas têm rótulos de alternativas ausentes no material original. Essas ausências foram mantidas e sinalizadas nos respectivos documentos.
+3. Os gabaritos refletem as respostas registradas no material enviado; não houve revisão técnica independente.
+4. As questões não devem ser somadas ao contador pessoal de questões resolvidas até serem efetivamente respondidas.
